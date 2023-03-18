@@ -1,31 +1,54 @@
-/******************************************************************************
- * Copyright 2020-2021 The Firmament Authors. All Rights Reserved.
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * SPDX-License-Identifier: Apache-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *****************************************************************************/
-#ifndef DRV_ADC_H__
-#define DRV_ADC_H__
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-03-28     shelton      first version
+ */
 
-#include <firmament.h>
+#ifndef __ADC_CONFIG_H__
+#define __ADC_CONFIG_H__
+
+#include <rtthread.h>
+#include <drivers/adc.h>
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-rt_err_t drv_adc_init(void);
+#if defined(BSP_USING_ADC1) || defined(BSP_USING_ADC2) || defined(BSP_USING_ADC3)
+
+#ifndef ADC1_CONFIG
+#define ADC1_CONFIG                \
+    {                              \
+       .adc_x      = ADC1,         \
+       .name       = "adc1",       \
+    }
+#endif /* ADC1_CONFIG */
+
+#ifndef ADC2_CONFIG
+#define ADC2_CONFIG                \
+    {                              \
+       .adc_x      = ADC2,         \
+       .name       = "adc2",       \
+    }
+#endif /* ADC2_CONFIG */
+
+#ifndef ADC3_CONFIG
+#define ADC3_CONFIG                \
+    {                              \
+       .adc_x      = ADC3,         \
+       .name       = "adc3",       \
+    }
+#endif /* ADC3_CONFIG */
+
+#endif
+
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif
+#endif /* __ADC_CONFIG_H__ */

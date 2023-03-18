@@ -15,259 +15,135 @@
  *****************************************************************************/
 #include "drv_i2c.h"
 #include "hal/i2c/i2c.h"
-#include "stm32f7xx_ll_i2c.h"
 
-// #define DRV_DBG(...) console_printf(__VA_ARGS__)
+// #define DRV_DBG(...) printf(__VA_ARGS__)
 #define DRV_DBG(...)
 
 /* We want to ensure the real-time performace, so the i2c timeout here is
  * relatively short */
-#define I2C_TIMEOUT_US (1000)
+#define I2C_TIMEOUT_US (10000)
 
-struct stm32_i2c_bus {
+struct gd32_i2c_bus {
     struct rt_i2c_bus parent;
-    I2C_TypeDef* I2C;
+    uint32_t i2c_periph;
 };
 
-static void i2c1_hw_init(void)
+static void i2c_hw_init(void)
 {
-    LL_I2C_InitTypeDef I2C_InitStruct = { 0 };
+    /* I2C0 Configuration */
 
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+    /* enable clock */
+    rcu_periph_clock_enable(RCU_GPIOB);
+    rcu_periph_clock_enable(RCU_I2C0);
 
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
-    /**I2C1 GPIO Configuration
-  PB8   ------> I2C1_SCL
-  PB9   ------> I2C1_SDA
-  */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_8;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    /* connect PB8 to I2C0_SCL */
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_8);
+    /* connect PB9 to I2C0_SDA */
+    gpio_af_set(GPIOB, GPIO_AF_4, GPIO_PIN_9);
 
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_9;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+    /* configure I2C0 GPIO. SCL/SDA have external pull-up */
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_8);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_8);
+    gpio_mode_set(GPIOB, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_9);
+    gpio_output_options_set(GPIOB, GPIO_OTYPE_OD, GPIO_OSPEED_50MHZ, GPIO_PIN_9);
 
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C1);
-
-    /** I2C Initialization
-  */
-    LL_I2C_EnableAutoEndMode(I2C1);
-    LL_I2C_SetOwnAddress2(I2C1, 0, LL_I2C_OWNADDRESS2_NOMASK);
-    LL_I2C_DisableOwnAddress2(I2C1);
-    LL_I2C_DisableGeneralCall(I2C1);
-    LL_I2C_EnableClockStretching(I2C1);
-    I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-    I2C_InitStruct.Timing = 0x6000030D;
-    I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
-    I2C_InitStruct.DigitalFilter = 0;
-    I2C_InitStruct.OwnAddress1 = 0;
-    I2C_InitStruct.TypeAcknowledge = LL_I2C_ACK;
-    I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
-    LL_I2C_Init(I2C1, &I2C_InitStruct);
+    /* configure I2C clock */
+    i2c_clock_config(I2C0, 400000, I2C_DTCY_2);
+    /* configure I2C address */
+    i2c_mode_addr_config(I2C0, I2C_I2CMODE_ENABLE, I2C_ADDFORMAT_7BITS, 0x00);
+    /* enable I2C0 */
+    i2c_enable(I2C0);
+    /* enable acknowledge */
+    i2c_ack_config(I2C0, I2C_ACK_ENABLE);
 }
 
-static void i2c2_hw_init(void)
-{
-    LL_I2C_InitTypeDef I2C_InitStruct = { 0 };
-
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOF);
-    /**I2C2 GPIO Configuration
-  PF0   ------> I2C2_SDA
-  PF1   ------> I2C2_SCL
-  */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_1;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C2);
-
-    /** I2C Initialization
-  */
-    LL_I2C_EnableAutoEndMode(I2C2);
-    LL_I2C_SetOwnAddress2(I2C2, 0, LL_I2C_OWNADDRESS2_NOMASK);
-    LL_I2C_DisableOwnAddress2(I2C2);
-    LL_I2C_DisableGeneralCall(I2C2);
-    LL_I2C_EnableClockStretching(I2C2);
-    I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-    I2C_InitStruct.Timing = 0x6000030D;
-    I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
-    I2C_InitStruct.DigitalFilter = 0;
-    I2C_InitStruct.OwnAddress1 = 0;
-    I2C_InitStruct.TypeAcknowledge = LL_I2C_ACK;
-    I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
-    LL_I2C_Init(I2C2, &I2C_InitStruct);
-}
-
-static void i2c3_hw_init(void)
-{
-    LL_I2C_InitTypeDef I2C_InitStruct = { 0 };
-
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOH);
-    /**I2C3 GPIO Configuration
-  PH8   ------> I2C3_SDA
-  PH7   ------> I2C3_SCL
-  */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_8;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_7;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C3);
-
-    /** I2C Initialization
-  */
-    LL_I2C_EnableAutoEndMode(I2C3);
-    LL_I2C_SetOwnAddress2(I2C3, 0, LL_I2C_OWNADDRESS2_NOMASK);
-    LL_I2C_DisableOwnAddress2(I2C3);
-    LL_I2C_DisableGeneralCall(I2C3);
-    LL_I2C_EnableClockStretching(I2C3);
-    I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-    I2C_InitStruct.Timing = 0x6000030D;
-    I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
-    I2C_InitStruct.DigitalFilter = 0;
-    I2C_InitStruct.OwnAddress1 = 0;
-    I2C_InitStruct.TypeAcknowledge = LL_I2C_ACK;
-    I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
-    LL_I2C_Init(I2C3, &I2C_InitStruct);
-}
-
-static void i2c4_hw_init(void)
-{
-    LL_I2C_InitTypeDef I2C_InitStruct = { 0 };
-
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOF);
-    /**I2C4 GPIO Configuration
-  PF15   ------> I2C4_SDA
-  PF14   ------> I2C4_SCL
-  */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_15;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_14;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_VERY_HIGH;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_OPENDRAIN;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_UP;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_4;
-    LL_GPIO_Init(GPIOF, &GPIO_InitStruct);
-
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_I2C4);
-
-    /** I2C Initialization
-  */
-    LL_I2C_EnableAutoEndMode(I2C4);
-    LL_I2C_SetOwnAddress2(I2C4, 0, LL_I2C_OWNADDRESS2_NOMASK);
-    LL_I2C_DisableOwnAddress2(I2C4);
-    LL_I2C_DisableGeneralCall(I2C4);
-    LL_I2C_EnableClockStretching(I2C4);
-    I2C_InitStruct.PeripheralMode = LL_I2C_MODE_I2C;
-    I2C_InitStruct.Timing = 0x6000030D;
-    I2C_InitStruct.AnalogFilter = LL_I2C_ANALOGFILTER_ENABLE;
-    I2C_InitStruct.DigitalFilter = 0;
-    I2C_InitStruct.OwnAddress1 = 0;
-    I2C_InitStruct.TypeAcknowledge = LL_I2C_ACK;
-    I2C_InitStruct.OwnAddrSize = LL_I2C_OWNADDRESS1_7BIT;
-    LL_I2C_Init(I2C4, &I2C_InitStruct);
-}
-
-static fmt_err_t wait_TXIS_flag_until_timeout(I2C_TypeDef* I2Cx, uint32_t status, uint32_t timeout)
-{
-    uint32_t time_start = systime_now_ms();
-
-    while (((READ_BIT(I2Cx->ISR, I2C_ISR_TXIS) == I2C_ISR_TXIS) ? 1UL : 0UL) == status) {
-        /*  TXIS bit is not set when a NACK is received */
-        if (LL_I2C_IsActiveFlag_NACK(I2Cx)) {
-            return FMT_ERROR;
-        }
-
-        if ((systime_now_ms() - time_start) > timeout) {
-            return FMT_ETIMEOUT;
-        }
-    }
-    return FMT_EOK;
-}
-
-static fmt_err_t wait_flag_until_timeout(I2C_TypeDef* I2Cx, uint32_t flag, uint32_t status, uint64_t timeout_us)
+static fmt_err_t wait_flag_until_timeout(uint32_t i2c_periph, i2c_flag_enum flag, FlagStatus status, uint64_t timeout_us)
 {
     uint64_t time_start = systime_now_us();
 
-    while (((READ_BIT(I2Cx->ISR, flag) == flag) ? 1UL : 0UL) == status) {
-        if ((systime_now_us() - time_start) > timeout_us) {
+    while (i2c_flag_get(i2c_periph, flag) == status) {
+        if ((systime_now_us() - time_start) >= timeout_us) {
             return FMT_ETIMEOUT;
         }
     }
     return FMT_EOK;
 }
 
-static void i2c_flush_TXDR(I2C_TypeDef* I2Cx)
+static rt_err_t i2c_handle_transfer(uint32_t i2c_periph, rt_uint16_t slave_addr, bool addr_10bit, bool disable_ack, uint32_t trandirection)
 {
-    /* If a pending TXIS flag is set */
-    /* Write a dummy data in TXDR to clear it */
-    if (LL_I2C_IsActiveFlag_TXIS(I2Cx)) {
-        LL_I2C_TransmitData8(I2Cx, 0x00);
+    uint8_t slave10_first_byte, slave10_second_byte;
+
+    /* start/restart read operation */
+    i2c_start_on_bus(i2c_periph);
+    /* wait until SBSEND bit is set */
+    if (wait_flag_until_timeout(i2c_periph, I2C_FLAG_SBSEND, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+        DRV_DBG("I2C wait SBSEND timeout\n");
+        return RT_ERROR;
     }
 
-    /* Flush TX register if not empty */
-    if (!LL_I2C_IsActiveFlag_TXE(I2Cx)) {
-        LL_I2C_ClearFlag_TXE(I2Cx);
+    if (addr_10bit) {
+        slave10_first_byte = (0xF0) | (uint8_t)((slave_addr & 0x0300) >> 7);
+        /* send slave address first byte to I2C bus */
+        i2c_master_addressing(i2c_periph, slave10_first_byte, I2C_TRANSMITTER);
+        /* wait until ADD10SEND bit is set */
+        if (wait_flag_until_timeout(i2c_periph, I2C_FLAG_ADD10SEND, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+            DRV_DBG("I2C wait ADD10SEND timeout\n");
+            return RT_ERROR;
+        }
+        /* the second byte contains the remaining 8 bits of the 10-bit address */
+        slave10_second_byte = (uint8_t)(slave_addr & 0x00FF);
+        /* send slave address 2nd byte to I2C bus */
+        i2c_master_addressing(i2c_periph, slave10_second_byte, I2C_TRANSMITTER);
+        /* wait until ADDSEND bit is set */
+        if (wait_flag_until_timeout(i2c_periph, I2C_FLAG_ADDSEND, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+            DRV_DBG("I2C wait ADDSEND timeout\n");
+            return RT_ERROR;
+        }
+
+        if (disable_ack) {
+            /* N=1,reset ACKEN bit before clearing ADDRSEND bit */
+            i2c_ack_config(i2c_periph, I2C_ACK_DISABLE);
+        }
+        /* clear ADDSEND bit */
+        i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
+
+        /* only 10bit receive need this, see gd32 datasheet */
+        if (trandirection == I2C_RECEIVER) {
+            /* send a start condition to I2C bus */
+            i2c_start_on_bus(i2c_periph);
+            /* wait until SBSEND bit is set */
+            if (wait_flag_until_timeout(i2c_periph, I2C_FLAG_SBSEND, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+                DRV_DBG("I2C wait SBSEND timeout\n");
+                return RT_ERROR;
+            }
+            /* send slave address first byte to I2C bus */
+            i2c_master_addressing(i2c_periph, slave10_first_byte, trandirection);
+        }
+    } else {
+        /* send slave address to I2C bus */
+        i2c_master_addressing(i2c_periph, slave_addr, trandirection);
     }
+
+    /* wait until ADDSEND bit is set */
+    if (wait_flag_until_timeout(i2c_periph, I2C_FLAG_ADDSEND, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+        DRV_DBG("I2C wait ADDSEND timeout\n");
+        return RT_ERROR;
+    }
+
+    /* clear ADDSEND bit */
+    i2c_flag_clear(i2c_periph, I2C_FLAG_ADDSEND);
+
+    return RT_EOK;
 }
 
 static rt_size_t i2c_master_transfer(struct rt_i2c_bus* bus, rt_uint16_t slave_addr, struct rt_i2c_msg msgs[], rt_uint32_t num)
 {
     struct rt_i2c_msg* msg;
     uint32_t msg_idx = 0;
-    struct stm32_i2c_bus* stm32_i2c = (struct stm32_i2c_bus*)bus;
+    struct gd32_i2c_bus* gd32_i2c = (struct gd32_i2c_bus*)bus;
+    uint64_t start_us;
 
-    /* wait until bus is free. If timeout, generate stop again */
-    if (wait_flag_until_timeout(stm32_i2c->I2C, I2C_ISR_BUSY, 1, I2C_TIMEOUT_US) != FMT_EOK) {
+    if (wait_flag_until_timeout(gd32_i2c->i2c_periph, I2C_FLAG_I2CBSY, SET, I2C_TIMEOUT_US) != FMT_EOK) {
         DRV_DBG("I2C wait BUSY timeout\n");
         goto _stop;
     }
@@ -276,70 +152,59 @@ static rt_size_t i2c_master_transfer(struct rt_i2c_bus* bus, rt_uint16_t slave_a
         msg = &msgs[msg_idx];
         uint16_t nbytes = msg->len;
 
-        /* TODO: add support for 10bit addr */
-        RT_ASSERT(!(msg->flags & RT_I2C_ADDR_10BIT));
-
         if (msg->flags & RT_I2C_RD) {
             /* start/restart read operation */
-            LL_I2C_HandleTransfer(stm32_i2c->I2C, slave_addr, LL_I2C_ADDRESSING_MODE_7BIT, msg->len, LL_I2C_MODE_SOFTEND, LL_I2C_GENERATE_START_READ);
+            i2c_handle_transfer(gd32_i2c->i2c_periph, slave_addr, (msg->flags & RT_I2C_ADDR_10BIT) != 0, nbytes == 1, I2C_RECEIVER);
 
             while (nbytes--) {
+                if (nbytes == 0) {
+                    /* send a NACK for the last data byte, this should be done before last byte is received */
+                    i2c_ack_config(gd32_i2c->i2c_periph, I2C_ACK_DISABLE);
+                }
                 /* wait data received */
-                if (wait_flag_until_timeout(stm32_i2c->I2C, I2C_ISR_RXNE, 0, I2C_TIMEOUT_US) != FMT_EOK) {
-                    DRV_DBG("I2C wait RXNE timeout\n");
+                if (wait_flag_until_timeout(gd32_i2c->i2c_periph, I2C_FLAG_RBNE, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+                    DRV_DBG("I2C wait RBNE timeout\n");
                     goto _stop;
                 }
                 /* receive data */
-                *(msg->buf++) = LL_I2C_ReceiveData8(stm32_i2c->I2C);
-            }
-
-            /* Wait transmit complete */
-            if (wait_flag_until_timeout(stm32_i2c->I2C, I2C_ISR_TC, 0, I2C_TIMEOUT_US) != FMT_EOK) {
-                DRV_DBG("I2C wait RX TC timeout\n");
-                goto _stop;
+                *(msg->buf++) = i2c_data_receive(gd32_i2c->i2c_periph);
             }
         } else {
             /* start/restart write operation */
-            LL_I2C_HandleTransfer(stm32_i2c->I2C, slave_addr, LL_I2C_ADDRESSING_MODE_7BIT, msg->len, LL_I2C_MODE_SOFTEND, LL_I2C_GENERATE_START_WRITE);
+            i2c_handle_transfer(gd32_i2c->i2c_periph, slave_addr, (msg->flags & RT_I2C_ADDR_10BIT) != 0, false, I2C_TRANSMITTER);
 
             while (nbytes--) {
-                if (wait_TXIS_flag_until_timeout(stm32_i2c->I2C, 0, I2C_TIMEOUT_US) != FMT_EOK) {
-                    DRV_DBG("I2C wait TXIS timeout\n");
+                if (wait_flag_until_timeout(gd32_i2c->i2c_periph, I2C_FLAG_TBE, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+                    DRV_DBG("I2C wait TBE timeout\n");
                     goto _stop;
                 }
+
                 /* transmit data */
-                LL_I2C_TransmitData8(stm32_i2c->I2C, *(msg->buf++));
+                i2c_data_transmit(gd32_i2c->i2c_periph, *(msg->buf++));
             }
 
-            /* Wait transmit complete */
-            if (wait_flag_until_timeout(stm32_i2c->I2C, I2C_ISR_TC, 0, I2C_TIMEOUT_US) != FMT_EOK) {
-                DRV_DBG("I2C wait TC timeout\n");
+            /* wait transmit complete */
+            if (wait_flag_until_timeout(gd32_i2c->i2c_periph, I2C_FLAG_BTC, RESET, I2C_TIMEOUT_US) != FMT_EOK) {
+                DRV_DBG("I2C wait BTC timeout\n");
                 goto _stop;
             }
         }
     }
 
 _stop:
-    /* in master transmit, a STOP condition is automatically sent after the NACK reception */
-    if (!LL_I2C_IsActiveFlag_NACK(stm32_i2c->I2C)) {
-        /* generate stop condition, NACK is automatically generated before stop */
-        LL_I2C_HandleTransfer(stm32_i2c->I2C, slave_addr, LL_I2C_ADDRESSING_MODE_7BIT, 0, LL_I2C_MODE_SOFTEND, LL_I2C_GENERATE_STOP);
-    }
+    /* send a stop condition to I2C bus */
+    i2c_stop_on_bus(gd32_i2c->i2c_periph);
 
     /* wait until stop flag is set */
-    if (wait_flag_until_timeout(stm32_i2c->I2C, I2C_ISR_STOPF, 0, I2C_TIMEOUT_US) != FMT_EOK) {
-        DRV_DBG("I2C wait STOP timeout\n");
-    }
-    /* clear stop flag */
-    LL_I2C_ClearFlag_STOP(stm32_i2c->I2C);
-
-    if (LL_I2C_IsActiveFlag_NACK(stm32_i2c->I2C)) {
-        LL_I2C_ClearFlag_NACK(stm32_i2c->I2C);
-        i2c_flush_TXDR(stm32_i2c->I2C);
+    start_us = systime_now_us();
+    while (I2C_CTL0(gd32_i2c->i2c_periph) & I2C_CTL0_STOP) {
+        if ((systime_now_us() - start_us) >= I2C_TIMEOUT_US) {
+            DRV_DBG("I2C wait stop timeout\n");
+            break;
+        }
     }
 
-    /* clear CR2 register */
-    CLEAR_BIT(stm32_i2c->I2C->CR2, I2C_CR2_SADD | I2C_CR2_HEAD10R | I2C_CR2_NBYTES | I2C_CR2_RELOAD | I2C_CR2_RD_WRN);
+    i2c_ack_config(gd32_i2c->i2c_periph, I2C_ACK_ENABLE);
 
     return msg_idx;
 }
@@ -351,66 +216,35 @@ static const struct rt_i2c_bus_device_ops i2c_bus_ops = {
 };
 
 /* i2c bus instances */
-static struct stm32_i2c_bus stm32_i2c1 = {
+static struct gd32_i2c_bus gd32_i2c0 = {
     .parent.ops = &i2c_bus_ops,
-    .I2C = I2C1
-};
-
-static struct stm32_i2c_bus stm32_i2c2 = {
-    .parent.ops = &i2c_bus_ops,
-    .I2C = I2C2
-};
-
-static struct stm32_i2c_bus stm32_i2c3 = {
-    .parent.ops = &i2c_bus_ops,
-    .I2C = I2C3
-};
-
-static struct stm32_i2c_bus stm32_i2c4 = {
-    .parent.ops = &i2c_bus_ops,
-    .I2C = I2C4
+    .i2c_periph = I2C0
 };
 
 /* i2c device instances */
-static struct rt_i2c_device i2c1_dev1 = {
-    .slave_addr = IST8310_ADDRESS, /* 7 bit address */
+static struct rt_i2c_device i2c0_dev0 = {
+    .slave_addr = 0x45, /* AW2023 7 bit address */
     .flags = 0
 };
 
-static struct rt_i2c_device i2c1_dev2 = {
-    .slave_addr = NCP5623C_ADDRESS, /* 7 bit address */
-    .flags = 0
-};
-
-static struct rt_i2c_device i2c2_dev1 = {
-    .slave_addr = MS4525_ADDRESS, /* 7 bit address */
-    .flags = 0
-};
-
-static struct rt_i2c_device i2c3_dev1 = {
-    .slave_addr = IST8310_ADDRESS, /* 7 bit address */
+static struct rt_i2c_device i2c0_dev1 = {
+    .slave_addr = 0x28, /* MS4525 7 bit address */
     .flags = 0
 };
 
 rt_err_t drv_i2c_init(void)
 {
     /* i2c low-level initialization */
-    i2c1_hw_init();
-    i2c2_hw_init();
-    i2c3_hw_init();
-    i2c4_hw_init();
+    i2c_hw_init();
 
     /* register i2c bus */
-    RT_TRY(rt_i2c_bus_device_register(&stm32_i2c1.parent, "i2c1"));
-    RT_TRY(rt_i2c_bus_device_register(&stm32_i2c2.parent, "i2c2"));
-    RT_TRY(rt_i2c_bus_device_register(&stm32_i2c3.parent, "i2c3"));
-    RT_TRY(rt_i2c_bus_device_register(&stm32_i2c4.parent, "i2c4"));
+    RT_TRY(rt_i2c_bus_device_register(&gd32_i2c0.parent, "i2c0"));
 
     /* attach i2c devices */
-    RT_TRY(rt_i2c_bus_attach_device(&i2c1_dev1, "i2c1_dev1", "i2c1", RT_NULL));
-    RT_TRY(rt_i2c_bus_attach_device(&i2c1_dev2, "i2c1_dev2", "i2c1", RT_NULL));
-    RT_TRY(rt_i2c_bus_attach_device(&i2c2_dev1, "i2c2_dev1", "i2c2", RT_NULL));
-    RT_TRY(rt_i2c_bus_attach_device(&i2c3_dev1, "i2c3_dev1", "i2c3", RT_NULL));
+    RT_TRY(rt_i2c_bus_attach_device(&i2c0_dev0, "i2c0_dev0", "i2c0", RT_NULL));
+
+    /* attach i2c devices */
+    RT_TRY(rt_i2c_bus_attach_device(&i2c0_dev1, "i2c0_dev1", "i2c0", RT_NULL));
 
     return RT_EOK;
 }

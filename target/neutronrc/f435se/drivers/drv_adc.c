@@ -1,279 +1,186 @@
-/******************************************************************************
- * Copyright 2020-2021 The Firmament Authors. All Rights Reserved.
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * SPDX-License-Identifier: Apache-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *****************************************************************************/
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-05-16     shelton      first version
+ * 2023-01-31     shelton      add support f421/f425
+ */
 
-#include <firmament.h>
-
+#include "drv_common.h"
 #include "drv_adc.h"
-#include "hal/adc/adc.h"
-#include "stm32f7xx_ll_adc.h"
 
-#define ADC_CONVERSION_TIMEOUT_MS 2
+#if defined(BSP_USING_ADC1) || defined(BSP_USING_ADC2) || \
+    defined(BSP_USING_ADC3)
 
-struct stm32_adc {
-    ADC_TypeDef* adc_handle;
-} stm_adc1 = {
-    .adc_handle = ADC1
+//#define DRV_DEBUG
+#define LOG_TAG             "drv.adc"
+#include <drv_log.h>
+
+struct at32_adc
+{
+    struct rt_adc_device at32_adc_device;
+    adc_type *adc_x;
+    char *name;
 };
 
-static struct adc_device adc1;
-static struct rt_completion convert_cplt;
-
-void ADC_IRQHandler(void)
+static struct at32_adc at32_adc_obj[] =
 {
-    /* Check whether ADC group regular end of unitary conversion caused         */
-    /* the ADC interruption.                                                    */
-    /* Note: On this STM32 serie, ADC group regular end of conversion           */
-    /*       must be selected among end of unitary conversion                   */
-    /*       or end of sequence conversions.                                    */
-    /*       Refer to function "LL_ADC_REG_SetFlagEndOfConversion()".           */
-    if (LL_ADC_IsActiveFlag_EOCS(ADC1) != 0) {
-        /* Clear flag ADC group regular end of unitary conversion */
-        LL_ADC_ClearFlag_EOCS(ADC1);
+#ifdef BSP_USING_ADC1
+    ADC1_CONFIG,
+#endif
 
-        /* inform the completion of adc convertion */
-        rt_completion_done(&convert_cplt);
-    }
+#ifdef BSP_USING_ADC2
+    ADC2_CONFIG,
+#endif
 
-    /* Check whether ADC group regular overrun caused the ADC interruption */
-    if (LL_ADC_IsActiveFlag_OVR(ADC1) != 0) {
-        /* Clear flag ADC group regular overrun */
-        LL_ADC_ClearFlag_OVR(ADC1);
-
-        /* TODO: data is lost, maybe we can inform the waiting thread */
-    }
-}
-
-static rt_err_t adc_measure(adc_dev_t adc_dev, uint32_t channel, uint32_t* mVolt)
-{
-    uint32_t adc_channel;
-    uint16_t adcData;
-    struct stm32_adc* adc = (struct stm32_adc*)adc_dev->parent.user_data;
-
-    if (adc->adc_handle != ADC1) {
-        return RT_EINVAL;
-    }
-
-    switch (channel) {
-    case 0:
-        adc_channel = LL_ADC_CHANNEL_0;
-        break;
-    case 1:
-        adc_channel = LL_ADC_CHANNEL_1;
-        break;
-    case 2:
-        adc_channel = LL_ADC_CHANNEL_2;
-        break;
-    case 3:
-        adc_channel = LL_ADC_CHANNEL_3;
-        break;
-    case 4:
-        adc_channel = LL_ADC_CHANNEL_4;
-        break;
-    case 8:
-        adc_channel = LL_ADC_CHANNEL_8;
-        break;
-    case 10:
-        adc_channel = LL_ADC_CHANNEL_10;
-        break;
-    case 11:
-        adc_channel = LL_ADC_CHANNEL_11;
-        break;
-    case 12:
-        adc_channel = LL_ADC_CHANNEL_12;
-        break;
-    case 13:
-        adc_channel = LL_ADC_CHANNEL_13;
-        break;
-    case 14:
-        adc_channel = LL_ADC_CHANNEL_14;
-        break;
-    default:
-        return RT_EINVAL;
-    }
-
-    LL_ADC_REG_SetSequencerRanks(adc->adc_handle, LL_ADC_REG_RANK_1, adc_channel);
-    LL_ADC_SetChannelSamplingTime(adc->adc_handle, adc_channel, LL_ADC_SAMPLINGTIME_56CYCLES);
-
-    LL_ADC_REG_StartConversionSWStart(adc->adc_handle);
-
-    if (rt_completion_wait(&convert_cplt, TICKS_FROM_MS(ADC_CONVERSION_TIMEOUT_MS)) != RT_EOK) {
-        return RT_ERROR;
-    }
-
-    adcData = LL_ADC_REG_ReadConversionData12(adc->adc_handle);
-    *mVolt = __LL_ADC_CALC_DATA_TO_VOLTAGE(3300, adcData, LL_ADC_RESOLUTION_12B);
-
-    return RT_EOK;
-}
-
-static rt_err_t adc_enable(adc_dev_t adc_dev, uint8_t enable)
-{
-    struct stm32_adc* adc = (struct stm32_adc*)adc_dev->parent.user_data;
-
-    if (adc->adc_handle != ADC1) {
-        return RT_EINVAL;
-    }
-
-    if (enable == ADC_CMD_ENABLE) {
-        LL_ADC_Enable(adc->adc_handle);
-        /* the ADC needs a stabilization time of tSTAB 
-         * before it starts converting accurately 
-         */
-        sys_msleep(1);
-    } else if (enable == ADC_CMD_DISABLE) {
-        LL_ADC_Disable(adc->adc_handle);
-    } else {
-        return RT_EINVAL;
-    }
-
-    return RT_EOK;
-}
-
-static rt_err_t adc_hw_init(void)
-{
-    LL_ADC_InitTypeDef ADC_InitStruct = { 0 };
-    LL_ADC_REG_InitTypeDef ADC_REG_InitStruct = { 0 };
-    LL_ADC_CommonInitTypeDef ADC_CommonInitStruct = { 0 };
-
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
-
-    /* Peripheral clock enable */
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_ADC1);
-
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOC);
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOB);
-    /**ADC1 GPIO Configuration
-  PC0   ------> ADC1_IN10
-  PC1   ------> ADC1_IN11
-  PC2   ------> ADC1_IN12
-  PC3   ------> ADC1_IN13
-  PA1   ------> ADC1_IN1
-  PA0/WKUP   ------> ADC1_IN0
-  PA4   ------> ADC1_IN4
-  PC4   ------> ADC1_IN14
-  PA2   ------> ADC1_IN2
-  PA3   ------> ADC1_IN3
-  PB0   ------> ADC1_IN8
-  */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_1;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_2;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_3;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_1;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_4;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_4;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_2;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_3;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_0;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ANALOG;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    LL_GPIO_Init(GPIOB, &GPIO_InitStruct);
-
-    /* ADC1 interrupt Init */
-    NVIC_SetPriority(ADC_IRQn, NVIC_EncodePriority(NVIC_GetPriorityGrouping(), 0, 0));
-    NVIC_EnableIRQ(ADC_IRQn);
-
-    /** Common config
-  */
-    ADC_InitStruct.Resolution = LL_ADC_RESOLUTION_12B;
-    ADC_InitStruct.DataAlignment = LL_ADC_DATA_ALIGN_RIGHT;
-    ADC_InitStruct.SequencersScanMode = LL_ADC_SEQ_SCAN_DISABLE;
-    LL_ADC_Init(ADC1, &ADC_InitStruct);
-    ADC_REG_InitStruct.TriggerSource = LL_ADC_REG_TRIG_SOFTWARE;
-    ADC_REG_InitStruct.SequencerLength = LL_ADC_REG_SEQ_SCAN_DISABLE;
-    ADC_REG_InitStruct.SequencerDiscont = LL_ADC_REG_SEQ_DISCONT_DISABLE;
-    ADC_REG_InitStruct.ContinuousMode = LL_ADC_REG_CONV_SINGLE;
-    ADC_REG_InitStruct.DMATransfer = LL_ADC_REG_DMA_TRANSFER_NONE;
-    LL_ADC_REG_Init(ADC1, &ADC_REG_InitStruct);
-    LL_ADC_REG_SetFlagEndOfConversion(ADC1, LL_ADC_REG_FLAG_EOC_UNITARY_CONV);
-    ADC_CommonInitStruct.CommonClock = LL_ADC_CLOCK_SYNC_PCLK_DIV4;
-    ADC_CommonInitStruct.Multimode = LL_ADC_MULTI_INDEPENDENT;
-    LL_ADC_CommonInit(__LL_ADC_COMMON_INSTANCE(ADC1), &ADC_CommonInitStruct);
-    /** Configure Regular Channel
-  */
-    LL_ADC_REG_SetSequencerRanks(ADC1, LL_ADC_REG_RANK_1, LL_ADC_CHANNEL_0);
-    LL_ADC_SetChannelSamplingTime(ADC1, LL_ADC_CHANNEL_0, LL_ADC_SAMPLINGTIME_3CYCLES);
-
-    return RT_EOK;
-}
-
-static void adc_interrupt_configure(struct stm32_adc* adc)
-{
-    /* Enable  ADC interruptions */
-    LL_ADC_EnableIT_EOCS(adc->adc_handle);
-    LL_ADC_EnableIT_OVR(adc->adc_handle);
-}
-
-/* usart driver operations */
-static const struct adc_ops _adc_ops = {
-    .enable = adc_enable,
-    .measure = adc_measure
+#ifdef BSP_USING_ADC3
+    ADC3_CONFIG,
+#endif
 };
 
-rt_err_t drv_adc_init(void)
+static rt_err_t at32_adc_enabled(struct rt_adc_device *device, rt_uint32_t channel, rt_bool_t enabled)
 {
-    RT_CHECK(adc_hw_init());
+    adc_type *adc_x;
+    adc_base_config_type adc_config_struct;
+#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437)
+    adc_common_config_type adc_common_struct;
+#endif
 
-    adc_interrupt_configure(&stm_adc1);
+    RT_ASSERT(device != RT_NULL);
+    adc_x = device->parent.user_data;
 
-    rt_completion_init(&convert_cplt);
+    at32_msp_adc_init(adc_x);
 
-    adc1.ops = &_adc_ops;
+#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437)
+    adc_common_default_para_init(&adc_common_struct);
+    /* config combine mode */
+    adc_common_struct.combine_mode = ADC_INDEPENDENT_MODE;
+    /* config division, adcclk is division by hclk */
+    adc_common_struct.div = ADC_HCLK_DIV_4;
+    /* config common dma mode,it's not useful in independent mode */
+    adc_common_struct.common_dma_mode = ADC_COMMON_DMAMODE_DISABLE;
+    /* config common dma request repeat */
+    adc_common_struct.common_dma_request_repeat_state = FALSE;
+    /* config adjacent adc sampling interval,it's useful for ordinary shifting mode */
+    adc_common_struct.sampling_interval = ADC_SAMPLING_INTERVAL_5CYCLES;
+    /* config inner temperature sensor and vintrv */
+    adc_common_struct.tempervintrv_state = FALSE;
+    /* config voltage battery */
+    adc_common_struct.vbat_state = FALSE;
+    adc_common_config(&adc_common_struct);
+#else
+#if !defined (SOC_SERIES_AT32F415) && !defined (SOC_SERIES_AT32F421) && \
+    !defined (SOC_SERIES_AT32F425)
+    adc_combine_mode_select(ADC_INDEPENDENT_MODE);
+#endif
+    adc_ordinary_conversion_trigger_set(adc_x, ADC12_ORDINARY_TRIG_SOFTWARE, TRUE);
+#endif
 
-    return hal_adc_register(&adc1, "adc0", RT_DEVICE_FLAG_RDONLY, &stm_adc1);
+    /* adc_x configuration */
+    adc_base_default_para_init(&adc_config_struct);
+    adc_config_struct.data_align = ADC_RIGHT_ALIGNMENT;
+    adc_config_struct.ordinary_channel_length = 1;
+    adc_config_struct.repeat_mode = FALSE;
+    adc_config_struct.sequence_mode = FALSE;
+    adc_base_config(adc_x, &adc_config_struct);
+
+    if (!enabled)
+    {
+        /* disable adc_x */
+        adc_enable(adc_x, FALSE);
+    }
+    else
+    {
+        /* enable adc_x */
+        adc_enable(adc_x, TRUE);
+
+        /* enable adc_x calibration */
+        adc_calibration_init(adc_x);
+        /* check the end of adc_x reset calibration register */
+        while(adc_calibration_init_status_get(adc_x) == SET)
+        {
+        }
+        /* start adc_x calibration */
+         adc_calibration_start(adc_x);
+        /* check the end of adc_x calibration */
+        while(adc_calibration_status_get(adc_x) == SET)
+        {
+        }
+    }
+
+    return RT_EOK;
 }
+
+static rt_err_t at32_get_adc_value(struct rt_adc_device *device, rt_uint32_t channel, rt_uint32_t *value)
+{
+    adc_type *adc_x;
+    rt_uint32_t timeout = 0;
+
+    RT_ASSERT(device != RT_NULL);
+    adc_x = device->parent.user_data;
+
+    /* adc_x regular channels configuration */
+#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437)
+    adc_ordinary_channel_set(adc_x, (adc_channel_select_type)channel, 1, ADC_SAMPLETIME_247_5);
+#else
+    adc_ordinary_channel_set(adc_x, (adc_channel_select_type)channel, 1, ADC_SAMPLETIME_239_5);
+#endif
+
+    /* start adc_x software conversion */
+    adc_ordinary_software_trigger_enable(adc_x, TRUE);
+
+    /* wait for the adc to convert */
+#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437)
+    while((adc_flag_get(adc_x, ADC_OCCE_FLAG) == RESET) && timeout < 0xFFFF)
+#else
+    while((adc_flag_get(adc_x, ADC_CCE_FLAG) == RESET) && timeout < 0xFFFF)
+#endif
+    {
+        timeout ++;
+    }
+
+    if(timeout >= 0xFFFF)
+    {
+        LOG_D("channel%d converts timeout, please confirm adc_x enabled or not", channel);
+    }
+
+    /* get adc value */
+    *value = adc_ordinary_conversion_data_get(adc_x);
+
+    return RT_EOK;
+}
+
+static const struct rt_adc_ops at_adc_ops =
+{
+    .enabled = at32_adc_enabled,
+    .convert = at32_get_adc_value,
+};
+
+static int rt_hw_adc_init(void)
+{
+    int result = RT_EOK;
+    int i = 0;
+
+    for (i = 0; i < sizeof(at32_adc_obj) / sizeof(at32_adc_obj[0]); i++)
+    {
+        /* register ADC device */
+        if (rt_hw_adc_register(&at32_adc_obj[i].at32_adc_device, at32_adc_obj[i].name, &at_adc_ops, at32_adc_obj[i].adc_x) == RT_EOK)
+        {
+            LOG_D("%s register success", at32_adc_obj[i].name);
+        }
+        else
+        {
+            LOG_E("%s register failed", at32_adc_obj[i].name);
+            result = -RT_ERROR;
+        }
+
+    }
+
+    return result;
+}
+INIT_BOARD_EXPORT(rt_hw_adc_init);
+
+#endif /* BSP_USING_ADC */

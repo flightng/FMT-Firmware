@@ -1,452 +1,573 @@
-/******************************************************************************
- * Copyright 2020-2021 The Firmament Authors. All Rights Reserved.
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * SPDX-License-Identifier: Apache-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *****************************************************************************/
-#include <firmament.h>
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-05-16     shelton      first version
+ */
 
-#include "hal/actuator/actuator.h"
-#include "stm32f7xx_ll_rcc.h"
-#include "stm32f7xx_ll_tim.h"
+#include "drv_common.h"
 
-// #define DRV_DBG(...) console_printf(__VA_ARGS__)
-#define DRV_DBG(...)
+#ifdef RT_USING_PWM
+#include "drv_pwm.h"
+#include <drivers/rt_drv_pwm.h>
 
-#define PWM_FREQ_50HZ  (50)
-#define PWM_FREQ_125HZ (125)
-#define PWM_FREQ_250HZ (250)
-#define PWM_FREQ_400HZ (400)
+//#define DRV_DEBUG
+#define LOG_TAG                         "drv.pwm"
+#include <drv_log.h>
 
-#define MAX_PWM_OUT_CHAN      8             // AUX Out has 8 pwm channel
-#define TIMER_FREQUENCY       3000000       // Timer frequency: 3M
-#define PWM_DEFAULT_FREQUENCY PWM_FREQ_50HZ // pwm default frequqncy
-#define VAL_TO_DC(_val)       ((float)(_val * __pwm_freq) / 1000000.0f)
-#define DC_TO_VAL(_dc)        (1000000.0f / __pwm_freq * _dc)
+#define MAX_PERIOD                      65535
 
-#define PWM_ARR(freq) (TIMER_FREQUENCY / freq) // CCR reload value, Timer frequency = 3M/60K = 50 Hz
-#define PWM_TIMER(id) (id < 4 ? TIM1 : TIM4)
+struct rt_device_pwm pwm_device;
 
-static uint32_t __pwm_freq = PWM_DEFAULT_FREQUENCY;
-static float __pwm_dc[MAX_PWM_OUT_CHAN];
-
-void pwm_gpio_init(void)
+struct at32_pwm
 {
-    LL_GPIO_InitTypeDef GPIO_InitStruct = { 0 };
+    struct rt_device_pwm pwm_device;
+    tmr_type* tmr_x;
+    rt_uint8_t channel;
+    char *name;
+};
 
-    /* Timer 1 gpio init */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOA);
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOE);
-    /**TIM1 GPIO Configuration
-    PA10     ------> TIM1_CH3
-    PE9     ------> TIM1_CH1
-    PE11     ------> TIM1_CH2
-    PE14     ------> TIM1_CH4
-    */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_10;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-    LL_GPIO_Init(GPIOA, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_9;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-    LL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_11;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-    LL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_14;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_1;
-    LL_GPIO_Init(GPIOE, &GPIO_InitStruct);
-
-    /* Timer 4 gpio init */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOD);
-    /**TIM4 GPIO Configuration
-    PD14     ------> TIM4_CH3
-    PD13     ------> TIM4_CH2
-    */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_14;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_2;
-    LL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_13;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_2;
-    LL_GPIO_Init(GPIOD, &GPIO_InitStruct);
-
-    /* Timer12 gpio init */
-    LL_AHB1_GRP1_EnableClock(LL_AHB1_GRP1_PERIPH_GPIOH);
-    /**TIM12 GPIO Configuration
-    PH6     ------> TIM12_CH1
-    PH9     ------> TIM12_CH2
-    */
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_6;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_9;
-    LL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-
-    GPIO_InitStruct.Pin = LL_GPIO_PIN_9;
-    GPIO_InitStruct.Mode = LL_GPIO_MODE_ALTERNATE;
-    GPIO_InitStruct.Speed = LL_GPIO_SPEED_FREQ_LOW;
-    GPIO_InitStruct.OutputType = LL_GPIO_OUTPUT_PUSHPULL;
-    GPIO_InitStruct.Pull = LL_GPIO_PULL_NO;
-    GPIO_InitStruct.Alternate = LL_GPIO_AF_9;
-    LL_GPIO_Init(GPIOH, &GPIO_InitStruct);
-}
-
-void pwm_timer_init(void)
+enum
 {
-    LL_TIM_InitTypeDef TIM_InitStruct = { 0 };
-    LL_TIM_OC_InitTypeDef TIM_OC_InitStruct = { 0 };
-    LL_TIM_BDTR_InitTypeDef TIM_BDTRInitStruct = { 0 };
-    LL_RCC_ClocksTypeDef rcc_clocks;
-    uint32_t APB1_PrescalerValue;
-    uint32_t APB2_PrescalerValue;
+#ifdef BSP_USING_PWM1
+    PWM1_INDEX,
+#endif
+#ifdef BSP_USING_PWM2
+    PWM2_INDEX,
+#endif
+#ifdef BSP_USING_PWM3
+    PWM3_INDEX,
+#endif
+#ifdef BSP_USING_PWM4
+    PWM4_INDEX,
+#endif
+#ifdef BSP_USING_PWM5
+    PWM5_INDEX,
+#endif
+#ifdef BSP_USING_PWM6
+    PWM6_INDEX,
+#endif
+#ifdef BSP_USING_PWM7
+    PWM7_INDEX,
+#endif
+#ifdef BSP_USING_PWM8
+    PWM8_INDEX,
+#endif
+#ifdef BSP_USING_PWM9
+    PWM9_INDEX,
+#endif
+#ifdef BSP_USING_PWM10
+    PWM10_INDEX,
+#endif
+#ifdef BSP_USING_PWM11
+    PWM11_INDEX,
+#endif
+#ifdef BSP_USING_PWM12
+    PWM12_INDEX,
+#endif
+#ifdef BSP_USING_PWM13
+    PWM13_INDEX,
+#endif
+};
 
-    LL_RCC_GetSystemClocksFreq(&rcc_clocks);
-    /* APB1 Timer Clock = PCLK1 * 2 */
-    APB1_PrescalerValue = (rcc_clocks.PCLK1_Frequency * 2) / TIMER_FREQUENCY - 1;
-    /* APB2 Timer Clock = PCLK2 * 2 */
-    APB2_PrescalerValue = (rcc_clocks.PCLK2_Frequency * 2) / TIMER_FREQUENCY - 1;
-
-    /* Timer 1 initialization */
-
-    /* Peripheral clock enable */
-    LL_APB2_GRP1_EnableClock(LL_APB2_GRP1_PERIPH_TIM1);
-
-    TIM_InitStruct.Prescaler = APB2_PrescalerValue;
-    TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-    TIM_InitStruct.Autoreload = PWM_ARR(__pwm_freq) - 1;
-    TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-    TIM_InitStruct.RepetitionCounter = 0;
-    LL_TIM_Init(TIM1, &TIM_InitStruct);
-    LL_TIM_EnableARRPreload(TIM1);
-    LL_TIM_OC_EnablePreload(TIM1, LL_TIM_CHANNEL_CH1);
-    TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.CompareValue = 0;
-    TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
-    TIM_OC_InitStruct.OCNPolarity = LL_TIM_OCPOLARITY_HIGH;
-    TIM_OC_InitStruct.OCIdleState = LL_TIM_OCIDLESTATE_LOW;
-    TIM_OC_InitStruct.OCNIdleState = LL_TIM_OCIDLESTATE_LOW;
-    LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH1, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM1, LL_TIM_CHANNEL_CH1);
-    LL_TIM_OC_EnablePreload(TIM1, LL_TIM_CHANNEL_CH2);
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH2, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM1, LL_TIM_CHANNEL_CH2);
-    LL_TIM_OC_EnablePreload(TIM1, LL_TIM_CHANNEL_CH3);
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH3, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM1, LL_TIM_CHANNEL_CH3);
-    LL_TIM_OC_EnablePreload(TIM1, LL_TIM_CHANNEL_CH4);
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    LL_TIM_OC_Init(TIM1, LL_TIM_CHANNEL_CH4, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM1, LL_TIM_CHANNEL_CH4);
-    LL_TIM_SetTriggerOutput(TIM1, LL_TIM_TRGO_RESET);
-    LL_TIM_SetTriggerOutput2(TIM1, LL_TIM_TRGO2_RESET);
-    LL_TIM_DisableMasterSlaveMode(TIM1);
-    TIM_BDTRInitStruct.OSSRState = LL_TIM_OSSR_DISABLE;
-    TIM_BDTRInitStruct.OSSIState = LL_TIM_OSSI_DISABLE;
-    TIM_BDTRInitStruct.LockLevel = LL_TIM_LOCKLEVEL_OFF;
-    TIM_BDTRInitStruct.DeadTime = 0;
-    TIM_BDTRInitStruct.BreakState = LL_TIM_BREAK_DISABLE;
-    TIM_BDTRInitStruct.BreakPolarity = LL_TIM_BREAK_POLARITY_HIGH;
-    TIM_BDTRInitStruct.BreakFilter = LL_TIM_BREAK_FILTER_FDIV1;
-    TIM_BDTRInitStruct.Break2State = LL_TIM_BREAK2_DISABLE;
-    TIM_BDTRInitStruct.Break2Polarity = LL_TIM_BREAK2_POLARITY_HIGH;
-    TIM_BDTRInitStruct.Break2Filter = LL_TIM_BREAK2_FILTER_FDIV1;
-    TIM_BDTRInitStruct.AutomaticOutput = LL_TIM_AUTOMATICOUTPUT_DISABLE;
-    LL_TIM_BDTR_Init(TIM1, &TIM_BDTRInitStruct);
-
-    /* Timer 4 initialization */
-
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM4);
-
-    TIM_InitStruct.Prescaler = APB1_PrescalerValue;
-    TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-    TIM_InitStruct.Autoreload = PWM_ARR(__pwm_freq) - 1;
-    TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-    LL_TIM_Init(TIM4, &TIM_InitStruct);
-    LL_TIM_EnableARRPreload(TIM4);
-    LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH2);
-    TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.CompareValue = 0;
-    TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
-    LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH2, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM4, LL_TIM_CHANNEL_CH2);
-    LL_TIM_OC_EnablePreload(TIM4, LL_TIM_CHANNEL_CH3);
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    LL_TIM_OC_Init(TIM4, LL_TIM_CHANNEL_CH3, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM4, LL_TIM_CHANNEL_CH3);
-    LL_TIM_SetTriggerOutput(TIM4, LL_TIM_TRGO_RESET);
-    LL_TIM_DisableMasterSlaveMode(TIM4);
-
-    /* Timer 12 initialization */
-
-    /* Peripheral clock enable */
-    LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM12);
-
-    TIM_InitStruct.Prescaler = APB1_PrescalerValue;
-    TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-    TIM_InitStruct.Autoreload = PWM_ARR(__pwm_freq) - 1;
-    TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-    LL_TIM_Init(TIM12, &TIM_InitStruct);
-    LL_TIM_EnableARRPreload(TIM12);
-    LL_TIM_OC_EnablePreload(TIM12, LL_TIM_CHANNEL_CH1);
-    TIM_OC_InitStruct.OCMode = LL_TIM_OCMODE_PWM1;
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.CompareValue = 0;
-    TIM_OC_InitStruct.OCPolarity = LL_TIM_OCPOLARITY_HIGH;
-    LL_TIM_OC_Init(TIM12, LL_TIM_CHANNEL_CH1, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM12, LL_TIM_CHANNEL_CH1);
-    LL_TIM_OC_EnablePreload(TIM12, LL_TIM_CHANNEL_CH2);
-    TIM_OC_InitStruct.OCState = LL_TIM_OCSTATE_DISABLE;
-    TIM_OC_InitStruct.OCNState = LL_TIM_OCSTATE_DISABLE;
-    LL_TIM_OC_Init(TIM12, LL_TIM_CHANNEL_CH2, &TIM_OC_InitStruct);
-    LL_TIM_OC_DisableFast(TIM12, LL_TIM_CHANNEL_CH2);
-}
-
-rt_inline void __read_pwm(uint8_t chan_id, float* dc)
+static struct at32_pwm at32_pwm_obj[] =
 {
-    *dc = __pwm_dc[chan_id];
-}
+#ifdef BSP_USING_PWM1
+    PWM1_CONFIG,
+#endif
 
-rt_inline void __write_pwm(uint8_t chan_id, float dc)
+#ifdef BSP_USING_PWM2
+    PWM2_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM3
+    PWM3_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM4
+    PWM4_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM5
+    PWM5_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM6
+    PWM6_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM7
+    PWM7_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM8
+    PWM8_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM9
+    PWM9_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM10
+    PWM10_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM11
+    PWM11_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM12
+    PWM12_CONFIG,
+#endif
+
+#ifdef BSP_USING_PWM13
+    PWM13_CONFIG,
+#endif
+};
+
+static rt_err_t drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg);
+static struct rt_pwm_ops drv_ops =
 {
-    switch (chan_id) {
-    case 0:
-        LL_TIM_OC_SetCompareCH4(TIM1, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 1:
-        LL_TIM_OC_SetCompareCH3(TIM1, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 2:
-        LL_TIM_OC_SetCompareCH2(TIM1, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 3:
-        LL_TIM_OC_SetCompareCH1(TIM1, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 4:
-        LL_TIM_OC_SetCompareCH2(TIM4, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 5:
-        LL_TIM_OC_SetCompareCH3(TIM4, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 6:
-        LL_TIM_OC_SetCompareCH1(TIM12, PWM_ARR(__pwm_freq) * dc);
-        break;
-    case 7:
-        LL_TIM_OC_SetCompareCH2(TIM12, PWM_ARR(__pwm_freq) * dc);
-        break;
-    default:
-        break;
+    drv_pwm_control
+};
+
+static void tmr_pclk_get(rt_uint32_t *pclk1_doubler, rt_uint32_t *pclk2_doubler)
+{
+    crm_clocks_freq_type  clocks_struct;
+
+    *pclk1_doubler = 1;
+    *pclk2_doubler = 1;
+
+    crm_clocks_freq_get(&clocks_struct);
+
+    if(clocks_struct.ahb_freq != clocks_struct.apb1_freq)
+    {
+        *pclk1_doubler = 2;
     }
 
-    __pwm_dc[chan_id] = dc;
+    if(clocks_struct.ahb_freq != clocks_struct.apb2_freq)
+    {
+        *pclk2_doubler = 2;
+    }
 }
 
-rt_err_t __set_pwm_frequency(uint16_t freq)
+static rt_err_t drv_pwm_enable(tmr_type* tmr_x, struct rt_pwm_configuration *configuration, rt_bool_t enable)
 {
-    if (freq < PWM_FREQ_50HZ || freq > PWM_FREQ_400HZ) {
-        /* invalid frequency */
-        return RT_EINVAL;
+    /* get the value of channel */
+    rt_uint32_t channel = configuration->channel;
+
+    if (!configuration->complementary)
+    {
+        if (!enable)
+        {
+            if(channel == 1)
+            {
+               tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_1, FALSE);
+            }
+            else if(channel == 2)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_2, FALSE);
+            }
+            else if(channel == 3)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_3, FALSE);
+            }
+            else if(channel == 4)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_4, FALSE);
+            }
+        }
+        else
+        {
+            if(channel == 1)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_1, TRUE);
+            }
+            else if(channel == 2)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_2, TRUE);
+            }
+            else if(channel == 3)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_3, TRUE);
+            }
+            else if(channel == 4)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_4, TRUE);
+            }
+        }
+    }
+    else
+    {
+        if (!enable)
+        {
+            if(channel == 1)
+            {
+               tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_1C, FALSE);
+            }
+            else if(channel == 2)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_2C, FALSE);
+            }
+            else if(channel == 3)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_3C, FALSE);
+            }
+        }
+        else
+        {
+            if(channel == 1)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_1C, TRUE);
+            }
+            else if(channel == 2)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_2C, TRUE);
+            }
+            else if(channel == 3)
+            {
+              tmr_channel_enable(tmr_x, TMR_SELECT_CHANNEL_3C, TRUE);
+            }
+        }
     }
 
-    __pwm_freq = freq;
-
-    LL_TIM_SetAutoReload(TIM1, PWM_ARR(__pwm_freq) - 1);
-    LL_TIM_SetAutoReload(TIM4, PWM_ARR(__pwm_freq) - 1);
-    LL_TIM_SetAutoReload(TIM12, PWM_ARR(__pwm_freq) - 1);
-
-    /* the timer compare value should be re-configured */
-    for (uint8_t i = 0; i < MAX_PWM_OUT_CHAN; i++) {
-        __write_pwm(i, __pwm_dc[i]);
-    }
+    /* tmr_x enable counter */
+    tmr_counter_enable(tmr_x, TRUE);
 
     return RT_EOK;
 }
 
-rt_err_t pwm_config(actuator_dev_t dev, const struct actuator_configure* cfg)
+static rt_err_t drv_pwm_get(tmr_type* tmr_x, struct rt_pwm_configuration *configuration)
 {
-    DRV_DBG("aux out configured: pwm frequency:%d\n", cfg->pwm_config.pwm_freq);
+    crm_clocks_freq_type clocks_struct;
+    rt_uint32_t pr, div, c1dt, c2dt, c3dt, c4dt;
+    rt_uint32_t pclk1_doubler = 0, pclk2_doubler = 0;
+    rt_uint32_t channel = configuration->channel;
+    rt_uint64_t tmr_clock;
 
-    if (__set_pwm_frequency(cfg->pwm_config.pwm_freq) != RT_EOK) {
-        return RT_ERROR;
+    pr = tmr_x->pr;
+    div = tmr_x->div;
+    c1dt = tmr_x->c1dt;
+    c2dt = tmr_x->c2dt;
+    c3dt = tmr_x->c3dt;
+    c4dt = tmr_x->c4dt;
+
+    tmr_pclk_get(&pclk1_doubler, &pclk2_doubler);
+
+    crm_clocks_freq_get(&clocks_struct);
+
+    if(
+#if defined (TMR1)
+    (tmr_x == TMR1)
+#endif
+#if defined (TMR8)
+    || (tmr_x == TMR8)
+#endif
+#if defined (TMR9)
+    || (tmr_x == TMR9)
+#endif
+#if defined (TMR10)
+    || (tmr_x == TMR10)
+#endif
+#if defined (TMR11)
+    || (tmr_x == TMR11)
+#endif
+    )
+    {
+        tmr_clock = clocks_struct.apb2_freq * pclk2_doubler;
     }
-    /* update device configuration */
-    dev->config = *cfg;
+    else
+    {
+        tmr_clock = clocks_struct.apb1_freq * pclk1_doubler;
+    }
+
+    /* convert nanosecond to frequency and duty cycle. */
+    tmr_clock /= 1000000UL;
+    configuration->period = (pr + 1) * (div + 1) * 1000UL / tmr_clock;
+
+    if(channel == 1)
+        configuration->pulse = (c1dt) * (div + 1) * 1000UL / tmr_clock;
+    if(channel == 2)
+        configuration->pulse = (c2dt) * (div + 1) * 1000UL / tmr_clock;
+    if(channel == 3)
+        configuration->pulse = (c3dt) * (div + 1) * 1000UL / tmr_clock;
+    if(channel == 4)
+        configuration->pulse = (c4dt) * (div + 1) * 1000UL / tmr_clock;
 
     return RT_EOK;
 }
 
-rt_err_t pwm_control(actuator_dev_t dev, int cmd, void* arg)
+static rt_err_t drv_pwm_set(tmr_type* tmr_x, struct rt_pwm_configuration *configuration)
 {
-    rt_err_t ret = RT_EOK;
+    crm_clocks_freq_type clocks_struct;
+    tmr_output_config_type tmr_oc_config_struct;
+    tmr_channel_select_type channel_select;
+    rt_uint32_t period, pulse, channel, tmr_clock;
+    rt_uint32_t pclk1_doubler = 0, pclk2_doubler = 0;
+    rt_uint64_t psc;
 
-    switch (cmd) {
-    case ACT_CMD_CHANNEL_ENABLE:
-        /* set to lowest pwm before open */
-        for (uint8_t i = 0; i < MAX_PWM_OUT_CHAN; i++) {
-            __write_pwm(i, VAL_TO_DC(1000));
-        }
+    /* init timer pin and enable clock */
+    at32_msp_tmr_init(tmr_x);
 
-        LL_TIM_EnableCounter(TIM1);
-        LL_TIM_EnableCounter(TIM4);
-        LL_TIM_EnableCounter(TIM12);
-        LL_TIM_EnableAllOutputs(TIM1);
+    tmr_pclk_get(&pclk1_doubler, &pclk2_doubler);
 
-        LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH1);
-        LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH2);
-        LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH3);
-        LL_TIM_CC_EnableChannel(TIM1, LL_TIM_CHANNEL_CH4);
-        LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH2);
-        LL_TIM_CC_EnableChannel(TIM4, LL_TIM_CHANNEL_CH3);
-        LL_TIM_CC_EnableChannel(TIM12, LL_TIM_CHANNEL_CH1);
-        LL_TIM_CC_EnableChannel(TIM12, LL_TIM_CHANNEL_CH2);
+    crm_clocks_freq_get(&clocks_struct);
 
-        DRV_DBG("aux out enabled\n");
-        break;
-    case ACT_CMD_CHANNEL_DISABLE:
-        LL_TIM_DisableCounter(TIM1);
-        LL_TIM_DisableCounter(TIM4);
-        LL_TIM_DisableCounter(TIM12);
-        LL_TIM_DisableAllOutputs(TIM1);
+    if(
+#if defined (TMR1)
+    (tmr_x == TMR1)
+#endif
+#if defined (TMR8)
+    || (tmr_x == TMR8)
+#endif
+#if defined (TMR9)
+    || (tmr_x == TMR9)
+#endif
+#if defined (TMR10)
+    || (tmr_x == TMR10)
+#endif
+#if defined (TMR11)
+    || (tmr_x == TMR11)
+#endif
+    )
+    {
+        tmr_clock = clocks_struct.apb2_freq * pclk2_doubler;
+    }
+    else
+    {
+        tmr_clock = clocks_struct.apb1_freq * pclk1_doubler;
+    }
 
-        LL_TIM_CC_DisableChannel(TIM1, LL_TIM_CHANNEL_CH1);
-        LL_TIM_CC_DisableChannel(TIM1, LL_TIM_CHANNEL_CH2);
-        LL_TIM_CC_DisableChannel(TIM1, LL_TIM_CHANNEL_CH3);
-        LL_TIM_CC_DisableChannel(TIM1, LL_TIM_CHANNEL_CH4);
-        LL_TIM_CC_DisableChannel(TIM4, LL_TIM_CHANNEL_CH2);
-        LL_TIM_CC_DisableChannel(TIM4, LL_TIM_CHANNEL_CH3);
-        LL_TIM_CC_DisableChannel(TIM12, LL_TIM_CHANNEL_CH1);
-        LL_TIM_CC_DisableChannel(TIM12, LL_TIM_CHANNEL_CH2);
+    /* convert nanosecond to frequency and duty cycle. */
+    tmr_clock /= 1000000UL;
+    /* calculate pwm period */
+    period = (unsigned long long)configuration->period * tmr_clock / 1000ULL;;
+    psc = period / MAX_PERIOD + 1;
+    period = period / psc;
+    /* calculate pulse width */
+    pulse = (unsigned long long)configuration->pulse * tmr_clock / psc / 1000ULL;
+    /* get channel parameter */
+    channel = configuration->channel;
 
-        DRV_DBG("aux out disabled\n");
-        break;
-    case ACT_CMD_SET_PROTOCOL:
-        /* TODO: Support dshot */
-        ret = RT_EINVAL;
-        break;
+    /* tmr base init */
+    tmr_base_init(tmr_x, period - 1, psc - 1);
+    tmr_clock_source_div_set(tmr_x, TMR_CLOCK_DIV1);
+
+    /* pwm mode configuration */
+    tmr_output_default_para_init(&tmr_oc_config_struct);
+    /* config pwm mode */
+    tmr_oc_config_struct.oc_mode = TMR_OUTPUT_CONTROL_PWM_MODE_A;
+
+    if (!configuration->complementary)
+    {
+        tmr_oc_config_struct.oc_idle_state = FALSE;
+        tmr_oc_config_struct.oc_output_state = FALSE;
+        tmr_oc_config_struct.oc_polarity = TMR_OUTPUT_ACTIVE_HIGH;
+    }
+    else
+    {
+        tmr_oc_config_struct.occ_idle_state = FALSE;
+        tmr_oc_config_struct.occ_output_state = FALSE;
+        tmr_oc_config_struct.occ_polarity = TMR_OUTPUT_ACTIVE_HIGH;
+    }
+
+    if(channel == 1)
+    {
+        channel_select = TMR_SELECT_CHANNEL_1;
+    }
+    else if(channel == 2)
+    {
+        channel_select = TMR_SELECT_CHANNEL_2;
+    }
+    else if(channel == 3)
+    {
+        channel_select = TMR_SELECT_CHANNEL_3;
+    }
+    else if(channel == 4)
+    {
+        channel_select = TMR_SELECT_CHANNEL_4;
+    }
+
+    /* config tmr pwm output */
+    tmr_output_channel_config(tmr_x, channel_select, &tmr_oc_config_struct);
+    tmr_output_channel_buffer_enable(tmr_x, channel_select, TRUE);
+    tmr_channel_value_set(tmr_x, channel_select, pulse);
+    /* enable tmr period buffer */
+    tmr_period_buffer_enable(tmr_x, TRUE);
+    /* enable output */
+    tmr_output_enable(tmr_x, TRUE);
+
+    return RT_EOK;
+}
+
+static rt_err_t drv_pwm_control(struct rt_device_pwm *device, int cmd, void *arg)
+{
+    struct rt_pwm_configuration *configuration = (struct rt_pwm_configuration *)arg;
+    tmr_type *tmr_x = (tmr_type *)device->parent.user_data;
+
+    switch (cmd)
+    {
+    case PWMN_CMD_ENABLE:
+        configuration->complementary = RT_TRUE;
+    case PWM_CMD_ENABLE:
+        return drv_pwm_enable(tmr_x, configuration, RT_TRUE);
+    case PWMN_CMD_DISABLE:
+        configuration->complementary = RT_FALSE;
+    case PWM_CMD_DISABLE:
+        return drv_pwm_enable(tmr_x, configuration, RT_FALSE);
+    case PWM_CMD_SET:
+        return drv_pwm_set(tmr_x, configuration);
+    case PWM_CMD_GET:
+        return drv_pwm_get(tmr_x, configuration);
     default:
-        ret = RT_EINVAL;
-        break;
+        return -RT_EINVAL;
     }
-
-    return ret;
 }
 
-rt_size_t pwm_read(actuator_dev_t dev, rt_uint16_t chan_sel, rt_uint16_t* chan_val, rt_size_t size)
+static void pwm_get_channel(void)
 {
-    rt_uint16_t* index = chan_val;
-    float dc;
+#ifdef BSP_USING_PWM1_CH1
+    at32_pwm_obj[PWM1_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM1_CH2
+    at32_pwm_obj[PWM1_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM1_CH3
+    at32_pwm_obj[PWM1_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM1_CH4
+    at32_pwm_obj[PWM1_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM2_CH1
+    at32_pwm_obj[PWM2_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM2_CH2
+    at32_pwm_obj[PWM2_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM2_CH3
+    at32_pwm_obj[PWM2_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM2_CH4
+    at32_pwm_obj[PWM2_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM3_CH1
+    at32_pwm_obj[PWM3_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM3_CH2
+    at32_pwm_obj[PWM3_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM3_CH3
+    at32_pwm_obj[PWM3_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM3_CH4
+    at32_pwm_obj[PWM3_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM4_CH1
+    at32_pwm_obj[PWM4_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM4_CH2
+    at32_pwm_obj[PWM4_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM4_CH3
+    at32_pwm_obj[PWM4_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM4_CH4
+    at32_pwm_obj[PWM4_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM5_CH1
+    at32_pwm_obj[PWM5_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM5_CH2
+    at32_pwm_obj[PWM5_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM5_CH3
+    at32_pwm_obj[PWM5_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM5_CH4
+    at32_pwm_obj[PWM5_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM6_CH1
+    at32_pwm_obj[PWM6_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM6_CH2
+    at32_pwm_obj[PWM6_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM6_CH3
+    at32_pwm_obj[PWM6_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM6_CH4
+    at32_pwm_obj[PWM6_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM7_CH1
+    at32_pwm_obj[PWM7_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM7_CH2
+    at32_pwm_obj[PWM7_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM7_CH3
+    at32_pwm_obj[PWM7_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM7_CH4
+    at32_pwm_obj[PWM7_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM8_CH1
+    at32_pwm_obj[PWM8_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM8_CH2
+    at32_pwm_obj[PWM8_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM8_CH3
+    at32_pwm_obj[PWM8_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM8_CH4
+    at32_pwm_obj[PWM8_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM9_CH1
+    at32_pwm_obj[PWM9_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM9_CH2
+    at32_pwm_obj[PWM9_INDEX].channel = 2;
+#endif
+#ifdef BSP_USING_PWM9_CH3
+    at32_pwm_obj[PWM9_INDEX].channel = 3;
+#endif
+#ifdef BSP_USING_PWM9_CH4
+    at32_pwm_obj[PWM9_INDEX].channel = 4;
+#endif
+#ifdef BSP_USING_PWM12_CH1
+    at32_pwm_obj[PWM12_INDEX].channel = 1;
+#endif
+#ifdef BSP_USING_PWM12_CH2
+    at32_pwm_obj[PWM12_INDEX].channel = 2;
+#endif
+}
 
-    for (uint8_t i = 0; i < MAX_PWM_OUT_CHAN; i++) {
-        if (chan_sel & (1 << i)) {
-            __read_pwm(i, &dc);
-            *index = DC_TO_VAL(dc);
-            index++;
+static int rt_hw_pwm_init(void)
+{
+    int i = 0;
+    int result = RT_EOK;
+
+    pwm_get_channel();
+
+    for(i = 0; i < sizeof(at32_pwm_obj) / sizeof(at32_pwm_obj[0]); i++)
+    {
+        if(rt_device_pwm_register(&at32_pwm_obj[i].pwm_device, at32_pwm_obj[i].name, &drv_ops, at32_pwm_obj[i].tmr_x) == RT_EOK)
+        {
+          LOG_D("%s register success", at32_pwm_obj[i].name);
+        }
+        else
+        {
+          LOG_D("%s register failed", at32_pwm_obj[i].name);
+          result = -RT_ERROR;
         }
     }
 
-    return size;
+    return result;
 }
 
-rt_size_t pwm_write(actuator_dev_t dev, rt_uint16_t chan_sel, const rt_uint16_t* chan_val, rt_size_t size)
-{
-    const rt_uint16_t* index = chan_val;
-    rt_uint16_t val;
-    float dc;
+INIT_BOARD_EXPORT(rt_hw_pwm_init);
 
-    for (uint8_t i = 0; i < MAX_PWM_OUT_CHAN; i++) {
-        if (chan_sel & (1 << i)) {
-            val = *index;
-            /* calculate pwm duty cycle */
-            dc = VAL_TO_DC(val);
-            /* update pwm signal */
-            __write_pwm(i, dc);
-
-            index++;
-        }
-    }
-
-    return size;
-}
-
-const static struct actuator_ops __act_ops = {
-    .act_config = pwm_config,
-    .act_control = pwm_control,
-    .act_read = pwm_read,
-    .act_write = pwm_write
-};
-
-//TODO modify channel mask
-static struct actuator_device act_dev = {
-    .chan_mask = 0xFF,
-    .range = { 1000, 2000 },
-    .config = {
-        .protocol = ACT_PROTOCOL_PWM,
-        .chan_num = MAX_PWM_OUT_CHAN,
-        .pwm_config = { .pwm_freq = 50 },
-        .dshot_config = { 0 } },
-    .ops = &__act_ops
-};
-
-rt_err_t drv_pwm_init(void)
-{
-    rt_err_t ret = RT_EOK;
-
-    /* init pwm gpio pin */
-    pwm_gpio_init();
-    /* init pwm timer, pwm output mode */
-    pwm_timer_init();
-
-    /* register actuator hal device */
-    ret = hal_actuator_register(&act_dev, "aux_out", RT_DEVICE_FLAG_RDWR, NULL);
-
-    return ret;
-}
+#endif /* RT_USING_PWM */

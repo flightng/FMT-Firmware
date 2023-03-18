@@ -19,7 +19,7 @@
 
 // clang-format off
 static char* default_conf = STRING(
-target = "NeutronRCF435SE"\n
+target = "NEUTF43TSE"\n
 [console]\n
 	[[console.devices]]\n
 	type = "serial"\n

@@ -3,7 +3,9 @@ Import('rtconfig')
 import os
 from building import *
 		
-objs = SConscript('at32_lib/SConscript')
-objs += SConscript('at32_usb_lib/SConscript')
+objs = SConscript('AT32F435_437_Firmware_Library/SConscript')
+objs+= SConscript('usbd_library/SConscript')
+objs+= SConscript('usbfs_library/SConscript')
+
 
 Return('objs')

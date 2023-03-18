@@ -1,33 +1,33 @@
-/******************************************************************************
- * Copyright 2020-2021 The Firmament Authors. All Rights Reserved.
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * SPDX-License-Identifier: Apache-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *****************************************************************************/
+ * Change Logs:
+ * Date           Author       Notes
+ * 2020-03-04     shelton      first version
+ */
 
-#ifndef DRV_USART_H__
-#define DRV_USART_H__
+#ifndef __DRV_UART_H__
+#define __DRV_UART_H__
 
-#include "board.h"
-#include <firmament.h>
+#include <rtthread.h>
+#include <rtdevice.h>
+#include "drv_dma.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct at32_uart {
+    char *name;
+    usart_type *uart_x;
+    IRQn_Type irqn;
+    struct dma_config *dma_rx;
+    rt_size_t last_index;
+    struct dma_config *dma_tx;
+    rt_uint16_t uart_dma_flag;
+    struct rt_serial_device serial;
+};
 
-rt_err_t drv_usart_init(void);
-
-#ifdef __cplusplus
-}
-#endif
+int rt_hw_usart_init(void);
 
 #endif /* __DRV_USART_H__ */
+
+/******************* end of file *******************/

@@ -17,6 +17,7 @@
 #define LED_H__
 
 #include <firmament.h>
+#include <at32f435_437.h>
 
 #include "driver/rgb_led/ncp5623c.h"
 #include "hal/pin/pin.h"
@@ -27,13 +28,15 @@ extern "C" {
 
 #define __STM32_PORT(port)  GPIO##port##_BASE
 #define GET_PIN(PORTx, PIN) (rt_base_t)((16 * (((rt_base_t)__STM32_PORT(PORTx) - (rt_base_t)GPIOA_BASE) / (0x0400UL))) + PIN)
+//TODO: CHANGE LED PIN TO PC4 BEFORE RELEASE 
+#define FMU_LED_RED_PIN   GET_PIN(D, 13) //USE AT32F437-START-BOARD FIRST
+#define FMU_LED_GREEN_PIN GET_PIN(D, 14)
+#define FMU_LED_BLUE_PIN  GET_PIN(D, 15)
+//AT-START BOARD LED INVERTED LOW=ON 
+#define LED_PIN_INVERTED 1
 
-#define FMU_LED_RED_PIN   GET_PIN(B, 1)
-#define FMU_LED_GREEN_PIN GET_PIN(C, 6)
-#define FMU_LED_BLUE_PIN  GET_PIN(C, 7)
-
-#define LED_ON(_pin)     led_set((struct device_pin_status) { .pin = _pin, .status = 0 })
-#define LED_OFF(_pin)    led_set((struct device_pin_status) { .pin = _pin, .status = 1 })
+#define LED_ON(_pin)     led_set((struct device_pin_status) { .pin = _pin, .status = LED_PIN_INVERTED==1?1:0 })
+#define LED_OFF(_pin)    led_set((struct device_pin_status) { .pin = _pin, .status = LED_PIN_INVERTED==1?0:1 })
 #define LED_TOGGLE(_pin) led_toggle(_pin)
 
 fmt_err_t led_control_init(void);

@@ -1,33 +1,44 @@
-/******************************************************************************
- * Copyright 2020 The Firmament Authors. All Rights Reserved.
+/*
+ * Copyright (c) 2006-2021, RT-Thread Development Team
  *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
+ * SPDX-License-Identifier: Apache-2.0
  *
- * http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *****************************************************************************/
-#ifndef DRV_SPI_H__
-#define DRV_SPI_H__
+ * Change Logs:
+ * Date           Author       Notes
+ * 2022-05-16     shelton      first version
+ */
 
-#include <firmament.h>
+#ifndef __DRV_SPI__
+#define __DRV_SPI__
 
-#include "board.h"
+#include <rtthread.h>
+#include <drivers/spi.h>
+#include "drv_common.h"
+#include "drv_dma.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+struct at32_spi_config
+{
+    spi_type *spi_x;
+    const char *spi_name;
+    IRQn_Type irqn;
+    struct dma_config *dma_rx;
+    struct dma_config *dma_tx;
+    rt_uint16_t spi_dma_flag;
+};
 
-rt_err_t drv_spi_init(void);
+struct at32_spi
+{
+    struct at32_spi_config *config;
+    struct rt_spi_bus spi_bus;
+};
 
-#ifdef __cplusplus
-}
-#endif
+struct at32_spi_cs
+{
+    gpio_type *gpio_x;
+    uint32_t gpio_pin;
+};
 
-#endif
+/* public function */
+rt_err_t rt_hw_spi_device_attach(const char *bus_name, const char *device_name, gpio_type *cs_gpiox, uint16_t cs_gpio_pin);
+
+#endif // __DRV_SPI__

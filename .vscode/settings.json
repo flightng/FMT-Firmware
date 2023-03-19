@@ -23,4 +23,6 @@
     "[jsonc]": {
         "editor.defaultFormatter": "vscode.json-language-features"
     },
+    "openocd.host":"127.0.0.1",
+    "openocd.path": "c:/users/emsr/Developer/tools/mcu/OpenOCD_V2.0.0/bin/openocd.exe",
 }

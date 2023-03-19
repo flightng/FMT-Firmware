@@ -7,6 +7,34 @@
             "label": "echo",
             "type": "shell",
             "command": "echo ${env:USERNAME}"
-        }
+        },
+        {
+            "label": "Build AT32F4",
+            "type": "shell",
+            "command": "scons -j4",
+            "group": "build",
+            "problemMatcher": [],
+            "options": {
+                "cwd": "${workspaceFolder}/target/neutronrc/f435se"
+            }
+        },
+        {
+            "label": "Launch OpenOCD",
+            "command": "${config:openocd.path}",
+            "args": [
+                "-f",
+                "\"${workspaceFolder}\\target\\neutronrc\\f435se\\board\\at32fc.cfg\"",
+                "-c",
+                "\"bindto 0.0.0.0\""
+            ],
+            "type": "shell",
+            "isBackground": false,
+            "group": "none",
+            "presentation": {
+                "reveal": "always",
+                "panel": "new"
+            },
+            "problemMatcher": []
+        },
     ]
 }

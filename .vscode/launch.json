@@ -79,5 +79,20 @@
             "svdFile": "target/amov/icf5/GD32F4xx.svd",
             "runToMain": true
         }
+        {
+            "name": "AT32 Debug AT-Link",
+            "type": "cortex-debug",
+            "request": "launch",
+            "cwd": "${workspaceRoot}",
+            "executable": "target/neutronrc/f435se/build/fmt_neut-f435se.elf",
+            "servertype": "external",
+            "gdbTarget": "${config:openocd.host}:3333",
+            "armToolchainPath": "${env:RTT_EXEC_PATH}",
+            "svdFile": "target/neutronrc/f435se/AT32F435xx_v2.svd",
+            //"runToMain": true
+            "preLaunchTask": "Launch OpenOCD",
+
+            //todo: 
+        }
     ]
 }

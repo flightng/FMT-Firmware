@@ -81,7 +81,7 @@ static void _set_systick_freq(rt_uint32_t freq)
     RT_ASSERT(freq > 0);
     RT_ASSERT(systick_dev != NULL);
 
-    ClockFreq = SystemCoreClock;
+    ClockFreq = system_core_clock;
     TicksNum = ClockFreq / freq;
 
     systick_dev->ticks_per_us = ClockFreq / 1e6;

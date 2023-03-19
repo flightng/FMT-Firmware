@@ -72,6 +72,7 @@ extern "C" {
     defined (AT32F435ZCT7) || defined (AT32F435ZGT7) || defined (AT32F435ZMT7)
 
     #define AT32F435xx
+    #define SOC_SERIES_AT32F435
 #endif
 
 #if defined (AT32F437RCT7) || defined (AT32F437RGT7) || defined (AT32F437RMT7) || \
@@ -79,6 +80,7 @@ extern "C" {
     defined (AT32F437ZCT7) || defined (AT32F437ZGT7) || defined (AT32F437ZMT7)
 
     #define AT32F437xx
+    #define SOC_SERIES_AT32F437
 #endif
 
 #ifndef USE_STDPERIPH_DRIVER

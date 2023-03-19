@@ -17,6 +17,7 @@
 #include <drivers/mmcsd_core.h>
 #include <drivers/sdio.h>
 #include "drv_common.h"
+#include "drv_dma.h"
 
 #define SDCARD_INSTANCE_TYPE                   sdio_type
 
@@ -183,17 +184,6 @@ typedef rt_uint32_t (*sdio_clk_get)(struct at32_sdio *hw_sdio);
         .dma_tx.dma_irq = DMA2_Channel4_5_IRQn,          \
     }
 #endif
-
-struct dma_config {
-    dma_type *dma_x;
-    dma_channel_type *dma_channel;
-#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437)
-    dmamux_channel_type *dmamux_channel;
-    dmamux_requst_id_sel_type dmamux_id;
-#endif
-    crm_periph_clock_type dma_crm;
-    IRQn_Type dma_irq;
-};
 
 struct at32_sdio_des
 {

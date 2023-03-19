@@ -21,28 +21,28 @@
 #include <string.h>
 
 #include "default_config.h"
-//#include "driver/airspeed/ms4525.h"
-//#include "driver/barometer/ms5611.h"
+#include "driver/airspeed/ms4525.h"
+#include "driver/barometer/ms5611.h"
 #include "driver/barometer/spl06.h"
 #include "driver/gps/gps_m8n.h"
-//#include "driver/imu/bmi088.h"
-//#include "driver/imu/icm20948.h"
+#include "driver/imu/bmi088.h"
+#include "driver/imu/icm20948.h"
 #include "driver/imu/icm42688p.h"
 #include "driver/mag/bmm150.h"
 #include "driver/mtd/w25qxx.h"
 #include "driver/rgb_led/aw2023.h"
-//#include "driver/vision_flow/mtf_01.h"
+#include "driver/vision_flow/mtf_01.h"
 #include "drv_adc.h"
 #include "drv_buzzer.h"
 #include "drv_gpio.h"
-//#include "drv_i2c.h"
+// #include "drv_soft_i2c.h"
 #include "drv_pwm.h"
 #include "drv_rc.h"
 #include "drv_sdio.h"
 #include "drv_spi.h"
 #include "drv_systick.h"
-#include "drv_usart.h"
-//#include "drv_usbd_cdc.h"
+#include "drv_usart_v2.h"
+// #include "drv_usbd_cdc.h"
 #include "led.h"
 #include "model/control/control_interface.h"
 #include "model/fms/fms_interface.h"
@@ -238,7 +238,7 @@ void bsp_early_initialize(void)
     rt_system_heap_init((void*)SYSTEM_FREE_MEM_BEGIN, (void*)SYSTEM_FREE_MEM_END);
 
     /* usart driver init */
-    RT_CHECK(drv_usart_init());
+    RT_CHECK(rt_hw_usart_init());
 
     /* init console to enable console output */
     FMT_CHECK(console_init());
@@ -250,13 +250,13 @@ void bsp_early_initialize(void)
     FMT_CHECK(systime_init());
 
     /* gpio driver init */
-    RT_CHECK(drv_gpio_init());
+    RT_CHECK(rt_hw_pin_init());
 
     /* spi driver init */
-    RT_CHECK(drv_spi_init());
+    RT_CHECK(rt_hw_spi_init());
 
     /* i2c driver init */
-    RT_CHECK(drv_i2c_init());
+    // RT_CHECK(rt_hw_i2c_init());
 
     /* pwm driver init */
     RT_CHECK(drv_pwm_init());

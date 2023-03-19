@@ -21,7 +21,7 @@ extern "C" {
 #if defined(BSP_USING_UART1)
 #define UART1_CONFIG                                                \
     {                                                               \
-        .name = "uart1",                                            \
+        .name = "serial0",                                            \
         .uart_x = USART1,                                           \
         .irqn = USART1_IRQn,                                        \
     }

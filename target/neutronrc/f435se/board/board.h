@@ -18,8 +18,6 @@
 #define FMT_BSP_H__
 
 #include <firmament.h>
-#include <at32f435_437.h>
-#include <at32f435_437_conf.h>
 
 #ifdef __cplusplus
 extern "C" {

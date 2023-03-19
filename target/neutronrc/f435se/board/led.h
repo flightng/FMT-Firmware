@@ -17,7 +17,6 @@
 #define LED_H__
 
 #include <firmament.h>
-#include <at32f435_437.h>
 
 #include "driver/rgb_led/ncp5623c.h"
 #include "hal/pin/pin.h"
@@ -26,8 +25,7 @@
 extern "C" {
 #endif
 
-#define __STM32_PORT(port)  GPIO##port##_BASE
-#define GET_PIN(PORTx, PIN) (rt_base_t)((16 * (((rt_base_t)__STM32_PORT(PORTx) - (rt_base_t)GPIOA_BASE) / (0x0400UL))) + PIN)
+
 //TODO: CHANGE LED PIN TO PC4 BEFORE RELEASE 
 #define FMU_LED_RED_PIN   GET_PIN(D, 13) //USE AT32F437-START-BOARD FIRST
 #define FMU_LED_GREEN_PIN GET_PIN(D, 14)

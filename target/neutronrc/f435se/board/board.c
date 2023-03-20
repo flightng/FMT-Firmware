@@ -41,9 +41,9 @@
 #include "drv_sdio.h"
 #include "drv_spi.h"
 #include "drv_systick.h"
-#include "drv_usart_v2.h"
+//#include "drv_usart_v2.h"
 // #include "drv_usbd_cdc.h"
-#include "led.h"
+//#include "led.h"
 #include "model/control/control_interface.h"
 #include "model/fms/fms_interface.h"
 #include "model/ins/ins_interface.h"
@@ -238,34 +238,34 @@ void bsp_early_initialize(void)
     rt_system_heap_init((void*)SYSTEM_FREE_MEM_BEGIN, (void*)SYSTEM_FREE_MEM_END);
 
     /* usart driver init */
-    RT_CHECK(rt_hw_usart_init());
+    // /RT_CHECK(rt_hw_usart_init());
 
-    /* init console to enable console output */
-    FMT_CHECK(console_init());
+    // /* init console to enable console output */
+    // FMT_CHECK(console_init());
 
-    /* systick driver init */
-    RT_CHECK(drv_systick_init());
+    // /* systick driver init */
+    // RT_CHECK(drv_systick_init());
 
-    /* system time module init */
-    FMT_CHECK(systime_init());
+    // /* system time module init */
+    // FMT_CHECK(systime_init());
 
-    /* gpio driver init */
-    RT_CHECK(rt_hw_pin_init());
+    // /* gpio driver init */
+    // RT_CHECK(rt_hw_pin_init());
 
-    /* spi driver init */
-    RT_CHECK(rt_hw_spi_init());
+    // /* spi driver init */
+    // RT_CHECK(rt_hw_spi_init());
 
-    /* i2c driver init */
-    // RT_CHECK(rt_hw_i2c_init());
+    // /* i2c driver init */
+    // // RT_CHECK(rt_hw_i2c_init());
 
-    /* pwm driver init */
-    RT_CHECK(drv_pwm_init());
+    // /* pwm driver init */
+    // RT_CHECK(drv_pwm_init());
 
     /* buzzer(pwm) driver init */
     // RT_CHECK(drv_buzzer_init());
 
     /* init remote controller driver */
-    RT_CHECK(drv_rc_init());
+    // RT_CHECK(drv_rc_init());
 
     /* system statistic module */
     FMT_CHECK(sys_stat_init());
@@ -283,22 +283,22 @@ void bsp_initialize(void)
     /* create workqueue */
     FMT_CHECK(workqueue_manager_init());
 
-    /* init storage devices */
-    RT_CHECK(drv_sdio_init());
-    RT_CHECK(drv_w25qxx_init("spi1_dev0", "mtdblk0"));
-    /* init file system */
-    FMT_CHECK(file_manager_init(mnt_table));
+    // /* init storage devices */
+    // RT_CHECK(drv_sdio_init());
+    // RT_CHECK(drv_w25qxx_init("spi1_dev0", "mtdblk0"));
+    // /* init file system */
+    // FMT_CHECK(file_manager_init(mnt_table));
 
-    /* init parameter system */
-    FMT_CHECK(param_init());
+    // /* init parameter system */
+    // FMT_CHECK(param_init());
 
-    /* init usbd_cdc */
-    RT_CHECK(drv_usb_cdc_init());
+    // /* init usbd_cdc */
+    // RT_CHECK(drv_usb_cdc_init());
 
-    /* adc driver init */
-    RT_CHECK(drv_adc_init());
+    // /* adc driver init */
+    // RT_CHECK(drv_adc_init());
 
-    RT_CHECK(drv_aw2023_init("i2c0_dev0"));
+    // RT_CHECK(drv_aw2023_init("i2c0_dev0"));
 
 #if defined(FMT_USING_SIH) || defined(FMT_USING_HIL)
     FMT_CHECK(advertise_sensor_imu(0));
@@ -308,26 +308,26 @@ void bsp_initialize(void)
     FMT_CHECK(advertise_sensor_airspeed(0));
 #else
     /* init onboard sensors */
-    RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
-    // RT_CHECK(drv_icm42688_init("spi0_dev4", "gyro1", "accel1", 0));
-    RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
-    RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
+    // RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
+    // // RT_CHECK(drv_icm42688_init("spi0_dev4", "gyro1", "accel1", 0));
+    // RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
+    // RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
 
-    drv_mtf_01_init("serial3");
+    // drv_mtf_01_init("serial3");
 
-    RT_CHECK(gps_m8n_init("serial4", "gps"));
+    // RT_CHECK(gps_m8n_init("serial4", "gps"));
 
-    /* register sensor to sensor hub */
-    FMT_CHECK(register_sensor_imu("gyro0", "accel0", 0));
-    // FMT_CHECK(register_sensor_imu("gyro1", "accel1", 1));
-    FMT_CHECK(register_sensor_mag("mag0", 0));
-    FMT_CHECK(register_sensor_barometer("barometer"));
-    FMT_CHECK(advertise_sensor_optflow(0));
-    FMT_CHECK(advertise_sensor_rangefinder(0));
+    // /* register sensor to sensor hub */
+    // FMT_CHECK(register_sensor_imu("gyro0", "accel0", 0));
+    // // FMT_CHECK(register_sensor_imu("gyro1", "accel1", 1));
+    // FMT_CHECK(register_sensor_mag("mag0", 0));
+    // FMT_CHECK(register_sensor_barometer("barometer"));
+    // FMT_CHECK(advertise_sensor_optflow(0));
+    // FMT_CHECK(advertise_sensor_rangefinder(0));
 
     if (strcmp(STR(VEHICLE_TYPE), "Fixwing") == 0) {
-        RT_CHECK(drv_ms4525_init("i2c0_dev1", "airspeed"));
-        FMT_CHECK(register_sensor_airspeed("airspeed"));
+        // RT_CHECK(drv_ms4525_init("i2c0_dev1", "airspeed"));
+        // FMT_CHECK(register_sensor_airspeed("airspeed"));
     }
 #endif
 

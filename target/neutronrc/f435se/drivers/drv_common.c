@@ -62,14 +62,14 @@ void SysTick_Handler(void)
   * @param  none
   * @retval none
   */
-void _Error_Handler(char *s, int num)
-{
-    /* User can add his own implementation to report the HAL error return state */
-    LOG_E("Error_Handler at file:%s num:%d", s, num);
-    while (1)
-    {
-    }
-}
+// void _Error_Handler(char *s, int num)
+// {
+//     /* User can add his own implementation to report the HAL error return state */
+//     LOG_E("Error_Handler at file:%s num:%d", s, num);
+//     while (1)
+//     {
+//     }
+// }
 
 /**
  * this function will delay for some us.

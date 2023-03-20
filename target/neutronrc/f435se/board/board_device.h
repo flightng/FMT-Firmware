@@ -22,6 +22,8 @@
 
 #define SPI1_SPEED_HZ 7000000
 
+#define RT_USING_PIN
+//gpio 
 //uart 
 #define BSP_USING_UART1
 #define BSP_USING_UART2

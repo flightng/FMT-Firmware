@@ -11,21 +11,16 @@
 
 #include "drv_common.h"
 #include "drv_gpio.h"
-
-#ifdef RT_USING_PIN
+#include "hal/pin/pin.h"
 
 #define PIN_NUM(port, no)               (((((port) & 0xFu) << 4) | ((no) & 0xFu)))
 #define PIN_PORT(pin)                   ((uint8_t)(((pin) >> 4) & 0xFu))
 #define PIN_NO(pin)                     ((uint8_t)((pin) & 0xFu))
 
-#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437) || \
-    defined (SOC_SERIES_AT32F421) || defined (SOC_SERIES_AT32F425)
+
 #define PIN_ATPORTSOURCE(pin)           (scfg_port_source_type)((uint8_t)(((pin) & 0xF0u) >> 4))
 #define PIN_ATPINSOURCE(pin)            (scfg_pins_source_type)((uint8_t)((pin) & 0xFu))
-#else
-#define PIN_ATPORTSOURCE(pin)           (gpio_port_source_type)((uint8_t)(((pin) & 0xF0u) >> 4))
-#define PIN_ATPINSOURCE(pin)            (gpio_pins_source_type)((uint8_t)((pin) & 0xFu))
-#endif
+
 
 #define PIN_ATPORT(pin)                 ((gpio_type *)(GPIOA_BASE + (0x400u * PIN_PORT(pin))))
 #define PIN_ATPIN(pin)                  ((uint16_t)(1u << PIN_NO(pin)))
@@ -61,27 +56,9 @@
 
 #define PIN_ATPORT_MAX __AT32_PORT_MAX
 
-#if defined (SOC_SERIES_AT32F421) || defined (SOC_SERIES_AT32F425)
-static const struct pin_irq_map pin_irq_map[] =
-{
-    {GPIO_PINS_0,  EXINT_LINE_0,  EXINT1_0_IRQn},
-    {GPIO_PINS_1,  EXINT_LINE_1,  EXINT1_0_IRQn},
-    {GPIO_PINS_2,  EXINT_LINE_2,  EXINT3_2_IRQn},
-    {GPIO_PINS_3,  EXINT_LINE_3,  EXINT3_2_IRQn},
-    {GPIO_PINS_4,  EXINT_LINE_4,  EXINT15_4_IRQn},
-    {GPIO_PINS_5,  EXINT_LINE_5,  EXINT15_4_IRQn},
-    {GPIO_PINS_6,  EXINT_LINE_6,  EXINT15_4_IRQn},
-    {GPIO_PINS_7,  EXINT_LINE_7,  EXINT15_4_IRQn},
-    {GPIO_PINS_8,  EXINT_LINE_8,  EXINT15_4_IRQn},
-    {GPIO_PINS_9,  EXINT_LINE_9,  EXINT15_4_IRQn},
-    {GPIO_PINS_10, EXINT_LINE_10, EXINT15_4_IRQn},
-    {GPIO_PINS_11, EXINT_LINE_11, EXINT15_4_IRQn},
-    {GPIO_PINS_12, EXINT_LINE_12, EXINT15_4_IRQn},
-    {GPIO_PINS_13, EXINT_LINE_13, EXINT15_4_IRQn},
-    {GPIO_PINS_14, EXINT_LINE_14, EXINT15_4_IRQn},
-    {GPIO_PINS_15, EXINT_LINE_15, EXINT15_4_IRQn},
-};
-#else
+static struct pin_device pin_device;
+
+
 static const struct pin_irq_map pin_irq_map[] =
 {
     {GPIO_PINS_0,  EXINT_LINE_0,  EXINT0_IRQn},
@@ -101,7 +78,6 @@ static const struct pin_irq_map pin_irq_map[] =
     {GPIO_PINS_14, EXINT_LINE_14, EXINT15_10_IRQn},
     {GPIO_PINS_15, EXINT_LINE_15, EXINT15_10_IRQn},
 };
-#endif
 
 static struct rt_pin_irq_hdr pin_irq_handler_tab[] =
 {
@@ -198,6 +174,7 @@ static int at32_pin_read(rt_device_t dev, rt_base_t pin)
 }
 
 static void at32_pin_mode(rt_device_t dev, rt_base_t pin, rt_base_t mode)
+
 {
     gpio_init_type gpio_init_struct;
     gpio_type *gpio_port;
@@ -422,12 +399,9 @@ static rt_err_t at32_pin_irq_enable(struct rt_device *device, rt_base_t pin,
         }
         gpio_init(gpio_port, &gpio_init_struct);
 
-#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437) || \
-    defined (SOC_SERIES_AT32F421) || defined (SOC_SERIES_AT32F425)
+
         scfg_exint_line_config(PIN_ATPORTSOURCE(pin), PIN_ATPINSOURCE(pin));
-#else
-        gpio_exint_line_config(PIN_ATPORTSOURCE(pin), PIN_ATPINSOURCE(pin));
-#endif
+
         exint_init(&exint_init_struct);
 
         nvic_irq_enable(irqmap->irqno, 5, 0);
@@ -477,15 +451,11 @@ static rt_err_t at32_pin_irq_enable(struct rt_device *device, rt_base_t pin,
     return RT_EOK;
 }
 
-const static struct rt_pin_ops _at32_pin_ops =
+const static struct pin_ops _at32_pin_ops =
 {
     at32_pin_mode,
     at32_pin_write,
-    at32_pin_read,
-    at32_pin_attach_irq,
-    at32_pin_dettach_irq,
-    at32_pin_irq_enable,
-    at32_pin_get,
+    at32_pin_read
 };
 
 rt_inline void pin_irq_handler(int irqno)
@@ -502,89 +472,6 @@ void gpio_exint_handler(uint16_t GPIO_Pin)
     pin_irq_handler(bit2bitno(GPIO_Pin));
 }
 
-#if defined (SOC_SERIES_AT32F421) || defined (SOC_SERIES_AT32F425)
-void EXINT1_0_IRQHandler(void)
-{
-    rt_interrupt_enter();
-    if (RESET != exint_flag_get(EXINT_LINE_0))
-    {
-        gpio_exint_handler(GPIO_PINS_0);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_1))
-    {
-        gpio_exint_handler(GPIO_PINS_1);
-    }
-    rt_interrupt_leave();
-}
-
-void EXINT3_2_IRQHandler(void)
-{
-    rt_interrupt_enter();
-    if (RESET != exint_flag_get(EXINT_LINE_2))
-    {
-        gpio_exint_handler(GPIO_PINS_2);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_3))
-    {
-        gpio_exint_handler(GPIO_PINS_3);
-    }
-    rt_interrupt_leave();
-}
-
-void EXINT15_4_IRQHandler(void)
-{
-    rt_interrupt_enter();
-    if (RESET != exint_flag_get(EXINT_LINE_4))
-    {
-        gpio_exint_handler(GPIO_PINS_4);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_5))
-    {
-        gpio_exint_handler(GPIO_PINS_5);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_6))
-    {
-        gpio_exint_handler(GPIO_PINS_6);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_7))
-    {
-        gpio_exint_handler(GPIO_PINS_7);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_8))
-    {
-        gpio_exint_handler(GPIO_PINS_8);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_9))
-    {
-        gpio_exint_handler(GPIO_PINS_9);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_10))
-    {
-        gpio_exint_handler(GPIO_PINS_10);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_11))
-    {
-        gpio_exint_handler(GPIO_PINS_11);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_12))
-    {
-        gpio_exint_handler(GPIO_PINS_12);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_13))
-    {
-        gpio_exint_handler(GPIO_PINS_13);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_14))
-    {
-        gpio_exint_handler(GPIO_PINS_14);
-    }
-    if (RESET != exint_flag_get(EXINT_LINE_15))
-    {
-        gpio_exint_handler(GPIO_PINS_15);
-    }
-    rt_interrupt_leave();
-}
-#else
 void EXINT0_IRQHandler(void)
 {
     rt_interrupt_enter();
@@ -675,7 +562,6 @@ void EXINT15_10_IRQHandler(void)
     }
     rt_interrupt_leave();
 }
-#endif
 
 int rt_hw_pin_init(void)
 {
@@ -705,16 +591,10 @@ int rt_hw_pin_init(void)
     crm_periph_clock_enable(CRM_GPIOH_PERIPH_CLOCK, TRUE);
 #endif
 
-#if defined (SOC_SERIES_AT32F435) || defined (SOC_SERIES_AT32F437) || \
-    defined (SOC_SERIES_AT32F421) || defined (SOC_SERIES_AT32F425)
+
     crm_periph_clock_enable(CRM_SCFG_PERIPH_CLOCK, TRUE);
-#else
-    crm_periph_clock_enable(CRM_IOMUX_PERIPH_CLOCK, TRUE);
-#endif
 
-    return rt_device_pin_register("pin", &_at32_pin_ops, RT_NULL);
+    pin_device.ops = &pin_ops;
+
+    return hal_pin_register(&pin_device, "pin", RT_DEVICE_FLAG_RDWR, RT_NULL);
 }
-
-INIT_BOARD_EXPORT(rt_hw_pin_init);
-
-#endif /* RT_USING_PIN */

@@ -37,6 +37,13 @@ drivers/src/at32f435_437_wwdt.c
 drivers/src/at32f435_437_xmc.c
 """)
 
+#add for DSP library
+src += Glob('cmsis/dsp/FastMathFunctions/*f32.c')
+src += Glob('cmsis/dsp//BasicMathFunctions/*f32.c')
+src += Glob('cmsis/dsp//MatrixFunctions/*f32.c')
+src += Glob('cmsis/dsp/SupportFunctions/*f32.c')
+src += Glob('cmsis/dsp/CommonTables/arm_common_tables.c')
+
 path = [
     cwd + '/cmsis/cm4/device_support',
     cwd + '/cmsis/cm4/core_support',

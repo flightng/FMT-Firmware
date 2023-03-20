@@ -43,7 +43,7 @@
 #include "drv_systick.h"
 //#include "drv_usart_v2.h"
 // #include "drv_usbd_cdc.h"
-//#include "led.h"
+#include "led.h"
 #include "model/control/control_interface.h"
 #include "model/fms/fms_interface.h"
 #include "model/ins/ins_interface.h"
@@ -75,11 +75,11 @@
 #define MATCH(a, b)     (strcmp(a, b) == 0)
 #define SYS_CONFIG_FILE "/sys/sysconfig.toml"
 
-static const struct dfs_mount_tbl mnt_table[] = {
-    { "sd0", "/", "elm", 0, NULL },
-    { "mtdblk0", "/mnt/mtdblk0", "elm", 0, NULL },
-    { NULL } /* NULL indicate the end */
-};
+// static const struct dfs_mount_tbl mnt_table[] = {
+//     { "sd0", "/", "elm", 0, NULL },
+//     { "mtdblk0", "/mnt/mtdblk0", "elm", 0, NULL },
+//     { NULL } /* NULL indicate the end */
+// };
 
 static toml_table_t* __toml_root_tab = NULL;
 
@@ -243,14 +243,14 @@ void bsp_early_initialize(void)
     // /* init console to enable console output */
     // FMT_CHECK(console_init());
 
-    // /* systick driver init */
-    // RT_CHECK(drv_systick_init());
+    /* systick driver init */
+    RT_CHECK(drv_systick_init());
 
-    // /* system time module init */
-    // FMT_CHECK(systime_init());
+    /* system time module init */
+    FMT_CHECK(systime_init());
 
-    // /* gpio driver init */
-    // RT_CHECK(rt_hw_pin_init());
+    /* gpio driver init */
+    RT_CHECK(rt_hw_pin_init());
 
     // /* spi driver init */
     // RT_CHECK(rt_hw_spi_init());
@@ -334,7 +334,7 @@ void bsp_initialize(void)
     /* init finsh */
     finsh_system_init();
     /* Mount finsh to console after finsh system init */
-    FMT_CHECK(console_enable_input());
+    // FMT_CHECK(console_enable_input());
 
 #ifdef FMT_USING_UNIT_TEST
     utest_init();
@@ -352,33 +352,33 @@ void bsp_post_initialize(void)
     FMT_CHECK(bsp_parse_toml_sysconfig(__toml_root_tab));
 
     /* init rc */
-    FMT_CHECK(pilot_cmd_init());
+    // FMT_CHECK(pilot_cmd_init());
 
     /* init gcs */
-    FMT_CHECK(gcs_cmd_init());
+    // FMT_CHECK(gcs_cmd_init());
 
     /* init auto command */
-    FMT_CHECK(auto_cmd_init());
+    // FMT_CHECK(auto_cmd_init());
 
     /* init mission data */
-    FMT_CHECK(mission_data_init());
+    // FMT_CHECK(mission_data_init());
 
 #if defined(FMT_HIL_WITH_ACTUATOR) || (!defined(FMT_USING_HIL) && !defined(FMT_USING_SIH))
     /* init actuator */
-    FMT_CHECK(actuator_init());
+    // FMT_CHECK(actuator_init());
 #endif
 
     /* start device message queue work */
     FMT_CHECK(devmq_start_work());
 
     /* initialize power management unit */
-    FMT_CHECK(pmu_init());
+    // FMT_CHECK(pmu_init());
 
     /* init led control */
     FMT_CHECK(led_control_init());
 
     /* show system information */
-    bsp_show_information();
+    // bsp_show_information();
 
     /* dump boot log to file */
     boot_log_dump();

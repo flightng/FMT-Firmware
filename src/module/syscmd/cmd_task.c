@@ -69,7 +69,7 @@ static int name_maxlen(const char* title)
     return max_len;
 }
 
-static int _list(struct optparse options)
+static int _cmd_list(struct optparse options)
 {
     uint32_t max_len = name_maxlen("Task") + 2;
     uint32_t task_num = get_task_num();
@@ -95,7 +95,7 @@ static int _list(struct optparse options)
     return EXIT_SUCCESS;
 }
 
-static int _start(struct optparse options)
+static int _cmd_start(struct optparse options)
 {
     char* arg;
     int option;
@@ -134,7 +134,7 @@ static int _start(struct optparse options)
     return EXIT_SUCCESS;
 }
 
-static int _suspend(struct optparse options)
+static int _cmd_suspend(struct optparse options)
 {
     char* arg;
     int option;
@@ -173,7 +173,7 @@ static int _suspend(struct optparse options)
     return EXIT_SUCCESS;
 }
 
-static int _resume(struct optparse options)
+static int _cmd_resume(struct optparse options)
 {
     char* arg;
     int option;
@@ -212,7 +212,7 @@ static int _resume(struct optparse options)
     return EXIT_SUCCESS;
 }
 
-static int _kill(struct optparse options)
+static int _cmd_kill(struct optparse options)
 {
     char* arg;
     int option;
@@ -262,15 +262,15 @@ int cmd_task(int argc, char** argv)
     arg = optparse_arg(&options);
     if (arg) {
         if (STRING_COMPARE(arg, "list")) {
-            res = _list(options);
+            res = _cmd_list(options);
         } else if (STRING_COMPARE(arg, "start")) {
-            res = _start(options);
+            res = _cmd_start(options);
         } else if (STRING_COMPARE(arg, "suspend")) {
-            res = _suspend(options);
+            res = _cmd_suspend(options);
         } else if (STRING_COMPARE(arg, "resume")) {
-            res = _resume(options);
+            res = _cmd_resume(options);
         } else if (STRING_COMPARE(arg, "kill")) {
-            res = _kill(options);
+            res = _cmd_kill(options);
         } else {
             show_usage();
             res = EXIT_FAILURE;

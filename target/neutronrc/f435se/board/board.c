@@ -21,25 +21,25 @@
 #include <string.h>
 
 #include "default_config.h"
-#include "driver/airspeed/ms4525.h"
-#include "driver/barometer/ms5611.h"
-#include "driver/barometer/spl06.h"
-#include "driver/gps/gps_m8n.h"
-#include "driver/imu/bmi088.h"
-#include "driver/imu/icm20948.h"
-#include "driver/imu/icm42688p.h"
-#include "driver/mag/bmm150.h"
-#include "driver/mtd/w25qxx.h"
-#include "driver/rgb_led/aw2023.h"
-#include "driver/vision_flow/mtf_01.h"
-#include "drv_adc.h"
-#include "drv_buzzer.h"
+// #include "driver/airspeed/ms4525.h"
+// #include "driver/barometer/ms5611.h"
+// #include "driver/barometer/spl06.h"
+// #include "driver/gps/gps_m8n.h"
+// #include "driver/imu/bmi088.h"
+// #include "driver/imu/icm20948.h"
+// #include "driver/imu/icm42688p.h"
+// #include "driver/mag/bmm150.h"
+// #include "driver/mtd/w25qxx.h"
+// #include "driver/rgb_led/aw2023.h"
+// #include "driver/vision_flow/mtf_01.h"
+// #include "drv_adc.h"
+// #include "drv_buzzer.h"
 #include "drv_gpio.h"
 // #include "drv_soft_i2c.h"
-#include "drv_pwm.h"
-#include "drv_rc.h"
-#include "drv_sdio.h"
-#include "drv_spi.h"
+// #include "drv_pwm.h"
+// #include "drv_rc.h"
+// #include "drv_sdio.h"
+// #include "drv_spi.h"
 #include "drv_systick.h"
 //#include "drv_usart_v2.h"
 // #include "drv_usbd_cdc.h"
@@ -332,7 +332,7 @@ void bsp_initialize(void)
 #endif
 
     /* init finsh */
-    finsh_system_init();
+    //finsh_system_init();
     /* Mount finsh to console after finsh system init */
     // FMT_CHECK(console_enable_input());
 
@@ -344,12 +344,12 @@ void bsp_initialize(void)
 void bsp_post_initialize(void)
 {
     /* toml system configure */
-    __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
-    if (!__toml_root_tab) {
-        /* use default system configuration */
-        __toml_root_tab = toml_parse_config_string(default_conf);
-    }
-    FMT_CHECK(bsp_parse_toml_sysconfig(__toml_root_tab));
+    // __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
+    // if (!__toml_root_tab) {
+    //     /* use default system configuration */
+    //     __toml_root_tab = toml_parse_config_string(default_conf);
+    // }
+    // FMT_CHECK(bsp_parse_toml_sysconfig(__toml_root_tab));
 
     /* init rc */
     // FMT_CHECK(pilot_cmd_init());
@@ -381,7 +381,7 @@ void bsp_post_initialize(void)
     // bsp_show_information();
 
     /* dump boot log to file */
-    boot_log_dump();
+    //boot_log_dump();
 }
 
 /**

@@ -5,7 +5,7 @@ MODULES = [
     'console/*.c',
     'system/*.c',
     'ipc/*.c',
-    'syscmd/*.c',
+    # 'syscmd/*.c',
     'file_manager/*.c',
     'ftp/*.c',
     "log/*.c",
@@ -18,7 +18,7 @@ MODULES = [
     'workqueue/*.c',
     'math/*.c',
     'filter/*.c',
-    'fmtio/*.c',
+    # 'fmtio/*.c',
     'task_manager/*.c',
     'pmu/*.c',
 ]

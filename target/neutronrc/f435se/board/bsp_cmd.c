@@ -31,4 +31,4 @@ int cmd_reboot(int argc, char** argv)
 {
     return syscmd_process(argc, argv, handle_cmd);
 }
-FINSH_FUNCTION_EXPORT_ALIAS(cmd_reboot, __cmd_reboot, reboot the system);
+// FINSH_FUNCTION_EXPORT_ALIAS(cmd_reboot, __cmd_reboot, reboot the system);

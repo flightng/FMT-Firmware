@@ -145,7 +145,7 @@ fmt_err_t rgb_led_set_bright(uint32_t bright)
 
 static struct WorkItem led_item = {
     .name = "led",
-    .period = 1000,
+    .period = 100,
     .schedule_time = 0,
     .run = run_led
 };

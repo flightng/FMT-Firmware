@@ -14,7 +14,7 @@
 #include <rtthread.h>
 #include <rtdevice.h>
 #include "drv_dma.h"
-
+//#include "serial.h"
 struct at32_uart {
     char *name;
     usart_type *uart_x;

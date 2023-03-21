@@ -2,7 +2,7 @@
 
 HAL = [
     'pin/*.c',
-    # 'serial/*.c',
+    'serial/*.c',
     'systick/*.c',
     # 'sd/*.c',
     # 'usb/usbd_cdc.c',
@@ -13,7 +13,7 @@ HAL = [
     # 'accel/*.c',
     # 'mag/*.c',
     # 'barometer/*.c',
-    # # 'fmtio_dev/*.c',
+    # 'fmtio_dev/*.c',
     # 'motor/*.c',
     # 'actuator/*.c',
     # 'rc/*.c',

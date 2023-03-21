@@ -41,7 +41,7 @@
 // #include "drv_sdio.h"
 // #include "drv_spi.h"
 #include "drv_systick.h"
-//#include "drv_usart_v2.h"
+#include "drv_usart.h"
 // #include "drv_usbd_cdc.h"
 #include "led.h"
 #include "model/control/control_interface.h"
@@ -81,7 +81,7 @@
 //     { NULL } /* NULL indicate the end */
 // };
 
-static toml_table_t* __toml_root_tab = NULL;
+//static toml_table_t* __toml_root_tab = NULL;
 
 static void banner_item(const char* name, const char* content, char pad, uint32_t len)
 {
@@ -238,7 +238,7 @@ void bsp_early_initialize(void)
     rt_system_heap_init((void*)SYSTEM_FREE_MEM_BEGIN, (void*)SYSTEM_FREE_MEM_END);
 
     /* usart driver init */
-    // /RT_CHECK(rt_hw_usart_init());
+    RT_CHECK(rt_hw_usart_init());
 
     // /* init console to enable console output */
     // FMT_CHECK(console_init());

@@ -23,9 +23,9 @@
             "command": "${config:openocd.path}",
             "args": [
                 "-f",
-                "\"${workspaceFolder}\\target\\neutronrc\\f435se\\board\\at32fc.cfg\"",
+                "\"${workspaceFolder}/target/neutronrc/f435se/board/at32fc.cfg\"",
                 "-c",
-                "\"bindto 0.0.0.0\""
+                "\"'bindto 0.0.0.0'\"",
             ],
             "type": "shell",
             "isBackground": false,

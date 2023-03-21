@@ -451,7 +451,7 @@ static rt_err_t at32_pin_irq_enable(struct rt_device *device, rt_base_t pin,
     return RT_EOK;
 }
 
-const static struct pin_ops _at32_pin_ops =
+const static struct pin_ops pin_ops =
 {
     at32_pin_mode,
     at32_pin_write,

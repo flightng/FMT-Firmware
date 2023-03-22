@@ -182,4 +182,6 @@
 /* USING C++ */
 #define RT_USING_CPLUSPLUS
 
+#define RT_USING_SERIAL
+
 #endif

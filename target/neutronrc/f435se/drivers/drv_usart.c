@@ -13,6 +13,7 @@
 #include "drv_common.h"
 #include "drv_usart.h"
 #include "drv_config.h"
+#include "board_device.h"
 
 #ifdef RT_USING_SERIAL
 #if !defined(BSP_USING_UART1) && !defined(BSP_USING_UART2) && \
@@ -79,6 +80,18 @@ static struct at32_uart uart_config[] = {
 #ifdef RT_SERIAL_USING_DMA
 static void at32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag);
 #endif
+
+struct at32_uart {
+    char *name;
+    usart_type *uart_x;
+    IRQn_Type irqn;
+    struct dma_config *dma_rx;
+    rt_size_t last_index;
+    struct dma_config *dma_tx;
+    rt_uint16_t uart_dma_flag;
+    struct rt_serial_device serial;
+};
+
 
 static rt_err_t at32_configure(struct rt_serial_device *serial,
     struct serial_configure *cfg) {

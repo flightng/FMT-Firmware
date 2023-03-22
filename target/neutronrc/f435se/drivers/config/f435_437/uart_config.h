@@ -18,6 +18,13 @@
 extern "C" {
 #endif
 
+#define BSP_USING_UART1
+#define BSP_USING_UART2
+#define BSP_USING_UART3
+#define BSP_USING_UART4
+#define BSP_USING_UART5
+#define BSP_USING_UART8
+
 #if defined(BSP_USING_UART1)
 #define UART1_CONFIG                                                \
     {                                                               \

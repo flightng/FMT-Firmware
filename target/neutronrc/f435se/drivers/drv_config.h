@@ -19,6 +19,8 @@
 extern "C" {
 #endif
 
+#define SOC_SERIES_AT32F435
+
 #if defined(SOC_SERIES_AT32F403A) || defined (SOC_SERIES_AT32F407)
 #include "f403a_407/dma_config.h"
 #include "f403a_407/uart_config.h"

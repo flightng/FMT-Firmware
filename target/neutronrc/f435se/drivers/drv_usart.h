@@ -16,7 +16,7 @@
 #include "drv_dma.h"
 //#include "serial.h"
 
-int rt_hw_usart_init(void);
+rt_err_t rt_hw_usart_init(void);
 
 #endif /* __DRV_USART_H__ */
 

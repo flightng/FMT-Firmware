@@ -25,6 +25,8 @@
 #define RT_USING_PIN
 //gpio 
 //uart 
+#define RT_USING_SERIAL
+
 #define BSP_USING_UART1
 #define BSP_USING_UART2
 #define BSP_USING_UART3

@@ -139,7 +139,7 @@ static rt_base_t at32_pin_get(const char *name)
     return pin;
 }
 
-static void at32_pin_write(rt_device_t dev, rt_base_t pin, rt_base_t value)
+static void at32_pin_write(pin_dev_t dev, rt_base_t pin, rt_base_t value)
 {
     gpio_type *gpio_port;
 
@@ -156,7 +156,7 @@ static void at32_pin_write(rt_device_t dev, rt_base_t pin, rt_base_t value)
     gpio_bits_write(gpio_port, gpio_pin, (confirm_state)value);
 }
 
-static int at32_pin_read(rt_device_t dev, rt_base_t pin)
+static int at32_pin_read(pin_dev_t dev, rt_base_t pin)
 {
     gpio_type *gpio_port;
     uint16_t gpio_pin;
@@ -173,7 +173,7 @@ static int at32_pin_read(rt_device_t dev, rt_base_t pin)
     return value;
 }
 
-static void at32_pin_mode(rt_device_t dev, rt_base_t pin, rt_base_t mode)
+static void at32_pin_mode(pin_dev_t dev, rt_base_t pin, rt_base_t mode,rt_base_t otype)
 
 {
     gpio_init_type gpio_init_struct;
@@ -202,7 +202,6 @@ static void at32_pin_mode(rt_device_t dev, rt_base_t pin, rt_base_t mode)
     {
         /* output setting */
         gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
-        gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
         gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
     }
     else if (mode == PIN_MODE_INPUT)
@@ -223,10 +222,10 @@ static void at32_pin_mode(rt_device_t dev, rt_base_t pin, rt_base_t mode)
         gpio_init_struct.gpio_mode = GPIO_MODE_INPUT;
         gpio_init_struct.gpio_pull = GPIO_PULL_DOWN;
     }
-    else if (mode == PIN_MODE_OUTPUT_OD)
-    {
-        /* output setting: od. */
-        gpio_init_struct.gpio_mode = GPIO_MODE_OUTPUT;
+ 
+    if (otype == PIN_OUT_TYPE_PP) {
+        gpio_init_struct.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+    } else if (otype == PIN_OUT_TYPE_OD) {
         gpio_init_struct.gpio_out_type = GPIO_OUTPUT_OPEN_DRAIN;
     }
 
@@ -451,7 +450,7 @@ static rt_err_t at32_pin_irq_enable(struct rt_device *device, rt_base_t pin,
     return RT_EOK;
 }
 
-const static struct pin_ops pin_ops =
+const static struct pin_ops _at_pin_ops =
 {
     at32_pin_mode,
     at32_pin_write,
@@ -594,7 +593,7 @@ int rt_hw_pin_init(void)
 
     crm_periph_clock_enable(CRM_SCFG_PERIPH_CLOCK, TRUE);
 
-    pin_device.ops = &pin_ops;
+    pin_device.ops = &_at_pin_ops;
 
     return hal_pin_register(&pin_device, "pin", RT_DEVICE_FLAG_RDWR, RT_NULL);
 }

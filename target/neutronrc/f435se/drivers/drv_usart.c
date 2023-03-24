@@ -14,7 +14,7 @@
 #include "drv_usart.h"
 #include "drv_config.h"
 #include "board_device.h"
-
+#include "hal/serial/serial.h"
 // #ifdef RT_USING_SERIAL
 // #if !defined(BSP_USING_UART1) && !defined(BSP_USING_UART2) && \
 //     !defined(BSP_USING_UART3) && !defined(BSP_USING_UART4) && \
@@ -31,7 +31,7 @@ struct at32_uart {
     rt_size_t last_index;
     struct dma_config *dma_tx;
     rt_uint16_t uart_dma_flag;
-    struct rt_serial_device serial;
+    struct serial_device serial;
 };
 
 
@@ -90,10 +90,10 @@ static struct at32_uart uart_config[] = {
 };
 
 #ifdef RT_SERIAL_USING_DMA
-static void at32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag);
+static void at32_dma_config(struct serial_device *serial, rt_ubase_t flag);
 #endif
 
-static rt_err_t at32_configure(struct rt_serial_device *serial,
+static rt_err_t at32_configure(struct serial_device *serial,
     struct serial_configure *cfg) {
     struct at32_uart *instance = (struct at32_uart *) serial->parent.user_data;
     usart_data_bit_num_type data_bit;
@@ -105,7 +105,7 @@ static rt_err_t at32_configure(struct rt_serial_device *serial,
 
     RT_ASSERT(instance != RT_NULL);
 
-    at32_msp_usart_init((void *)instance->uart_x);
+    //at32_msp_usart_init((void *)instance->uart_x);
 
     usart_receiver_enable(instance->uart_x, TRUE);
     usart_transmitter_enable(instance->uart_x, TRUE);
@@ -164,7 +164,7 @@ static rt_err_t at32_configure(struct rt_serial_device *serial,
     return RT_EOK;
 }
 
-static rt_err_t at32_control(struct rt_serial_device *serial, int cmd, void *arg) {
+static rt_err_t at32_control(struct serial_device *serial, int cmd, void *arg) {
     struct at32_uart *instance;
 
 #ifdef RT_SERIAL_USING_DMA
@@ -208,7 +208,7 @@ static rt_err_t at32_control(struct rt_serial_device *serial, int cmd, void *arg
     return RT_EOK;
 }
 
-static int at32_putc(struct rt_serial_device *serial, char ch) {
+static int at32_putc(struct serial_device *serial, char ch) {
     struct at32_uart *instance;
 
     RT_ASSERT(serial != RT_NULL);
@@ -221,7 +221,7 @@ static int at32_putc(struct rt_serial_device *serial, char ch) {
     return 1;
 }
 
-static int at32_getc(struct rt_serial_device *serial) {
+static int at32_getc(struct serial_device *serial) {
     int ch;
     struct at32_uart *instance;
 
@@ -279,7 +279,7 @@ static void _uart_dma_transmit(struct at32_uart *instance, rt_uint8_t *buffer, r
     dma_channel_enable(dma_channel, TRUE);
 }
 
-static void at32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag)
+static void at32_dma_config(struct serial_device *serial, rt_ubase_t flag)
 {
     dma_init_type dma_init_struct;
     dma_channel_type *dma_channel = NULL;
@@ -346,7 +346,7 @@ static void at32_dma_config(struct rt_serial_device *serial, rt_ubase_t flag)
     nvic_irq_enable(instance->irqn, 1, 0);
 }
 
-static rt_ssize_t at32_dma_transmit(struct rt_serial_device *serial, rt_uint8_t *buf, rt_size_t size, int direction)
+static rt_ssize_t at32_dma_transmit(struct serial_device *serial, rt_uint8_t *buf, rt_size_t size, int direction)
 {
     struct at32_uart *instance;
     instance = (struct at32_uart *) serial->parent.user_data;
@@ -368,18 +368,18 @@ static rt_ssize_t at32_dma_transmit(struct rt_serial_device *serial, rt_uint8_t 
 }
 #endif
 
-static const struct rt_uart_ops at32_uart_ops = {
-    at32_configure,
-    at32_control,
-    at32_putc,
-    at32_getc,
+static const struct usart_ops at32_uart_ops = {
+    .configure = at32_configure,
+    .control = at32_control,
+    .putc = at32_putc,
+    .getc = at32_getc,
 #ifdef RT_SERIAL_USING_DMA
-    at32_dma_transmit,
+    .dma_transmit = at32_dma_transmit,    
 #endif
 };
 
 #ifdef RT_SERIAL_USING_DMA
-void dma_rx_isr(struct rt_serial_device *serial)
+void dma_rx_isr(struct serial_device *serial)
 {
     volatile rt_uint32_t reg_sts = 0, index = 0;
     rt_size_t recv_total_index, recv_len;
@@ -417,7 +417,7 @@ void dma_rx_isr(struct rt_serial_device *serial)
     }
 }
 
-void dma_tx_isr(struct rt_serial_device *serial)
+void dma_tx_isr(struct serial_device *serial)
 {
     volatile rt_uint32_t reg_sts = 0, index = 0;
     rt_size_t trans_total_index;
@@ -451,7 +451,7 @@ void dma_tx_isr(struct rt_serial_device *serial)
 }
 #endif
 
-static void usart_isr(struct rt_serial_device *serial) {
+static void usart_isr(struct serial_device *serial) {
     struct at32_uart *instance;
 #ifdef RT_SERIAL_USING_DMA
     rt_size_t recv_total_index, recv_len;
@@ -463,7 +463,7 @@ static void usart_isr(struct rt_serial_device *serial) {
     RT_ASSERT(instance != RT_NULL);
 
     if (usart_flag_get(instance->uart_x, USART_RDBF_FLAG) != RESET) {
-        rt_hw_serial_isr(serial, RT_SERIAL_EVENT_RX_IND);
+        hal_serial_isr(serial, SERIAL_EVENT_RX_IND);
     }
 #ifdef RT_SERIAL_USING_DMA
     else if (usart_flag_get(instance->uart_x, USART_IDLEF_FLAG) != RESET)
@@ -967,7 +967,7 @@ rt_err_t rt_hw_usart_init(void) {
     int index;
 
     obj_num = sizeof(uart_config) / sizeof(struct at32_uart);
-    struct serial_configure config = RT_SERIAL_CONFIG_DEFAULT;
+    struct serial_configure config = SERIAL_DEFAULT_CONFIG;
     rt_err_t result = 0;
 
     at32_uart_get_dma_config();
@@ -981,7 +981,7 @@ rt_err_t rt_hw_usart_init(void) {
         _dma_base_channel_check(&uart_config[index]);
 #endif
         /* register uart device */
-        result = rt_hw_serial_register(&uart_config[index].serial,
+        result = hal_serial_register(&uart_config[index].serial,
                  uart_config[index].name,
                  RT_DEVICE_FLAG_RDWR |
                  RT_DEVICE_FLAG_INT_RX |

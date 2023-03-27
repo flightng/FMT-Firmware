@@ -26,18 +26,18 @@ target = "NEUTF43TSE"\n
 	name = "serial0"\n
 	baudrate = 57600\n
 	auto-switch = true\n
-	[[console.devices]]\n
-	type = "mavlink"\n
-	name = "mav_console"\n
-	auto-switch = true\n
-[mavproxy]\n
-	[[mavproxy.devices]]\n
-	type = "serial"\n
-	name = "serial1"\n
-	baudrate = 57600\n
-    [[mavproxy.devices]]\n
-	type = "usb"\n
-	name = "usbd0"\n
-    auto-switch = true
+// 	[[console.devices]]\n
+// 	type = "mavlink"\n
+// 	name = "mav_console"\n
+// 	auto-switch = true\n
+// [mavproxy]\n
+// 	[[mavproxy.devices]]\n
+// 	type = "serial"\n
+// 	name = "serial1"\n
+// 	baudrate = 57600\n
+//     [[mavproxy.devices]]\n
+// 	type = "usb"\n
+// 	name = "usbd0"\n
+//     auto-switch = true
 );
 // clang-format on

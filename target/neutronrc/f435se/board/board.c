@@ -81,7 +81,7 @@
 //     { NULL } /* NULL indicate the end */
 // };
 
-//static toml_table_t* __toml_root_tab = NULL;
+static toml_table_t* __toml_root_tab = NULL;
 
 static void banner_item(const char* name, const char* content, char pad, uint32_t len)
 {
@@ -241,7 +241,7 @@ void bsp_early_initialize(void)
     RT_CHECK(rt_hw_usart_init());
 
     // /* init console to enable console output */
-    // FMT_CHECK(console_init());
+    FMT_CHECK(console_init());
 
     /* systick driver init */
     RT_CHECK(drv_systick_init());
@@ -332,9 +332,9 @@ void bsp_initialize(void)
 #endif
 
     /* init finsh */
-    //finsh_system_init();
+    finsh_system_init();
     /* Mount finsh to console after finsh system init */
-    // FMT_CHECK(console_enable_input());
+    FMT_CHECK(console_enable_input());
 
 #ifdef FMT_USING_UNIT_TEST
     utest_init();
@@ -344,12 +344,12 @@ void bsp_initialize(void)
 void bsp_post_initialize(void)
 {
     /* toml system configure */
-    // __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
-    // if (!__toml_root_tab) {
-    //     /* use default system configuration */
-    //     __toml_root_tab = toml_parse_config_string(default_conf);
-    // }
-    // FMT_CHECK(bsp_parse_toml_sysconfig(__toml_root_tab));
+    //__toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
+    if (!__toml_root_tab) {
+        /* use default system configuration */
+        __toml_root_tab = toml_parse_config_string(default_conf);
+    }
+    FMT_CHECK(bsp_parse_toml_sysconfig(__toml_root_tab));
 
     /* init rc */
     // FMT_CHECK(pilot_cmd_init());
@@ -378,7 +378,7 @@ void bsp_post_initialize(void)
     FMT_CHECK(led_control_init());
 
     /* show system information */
-    // bsp_show_information();
+    bsp_show_information();
 
     /* dump boot log to file */
     //boot_log_dump();

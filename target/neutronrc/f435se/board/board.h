@@ -24,7 +24,7 @@ extern "C" {
 #endif
 
 // Board Information
-#define TARGET_NAME  "NEUT-F435SE"
+#define TARGET_NAME  "NEUTF43TSE"
 
 // Interupt Vector Offset
 #define INT_VECTOR_OFFSET 0x0

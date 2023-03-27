@@ -15,13 +15,13 @@
 #include "drv_config.h"
 #include "board_device.h"
 #include "hal/serial/serial.h"
-// #ifdef RT_USING_SERIAL
-// #if !defined(BSP_USING_UART1) && !defined(BSP_USING_UART2) && \
-//     !defined(BSP_USING_UART3) && !defined(BSP_USING_UART4) && \
-//     !defined(BSP_USING_UART5) && !defined(BSP_USING_UART6) && \
-//     !defined(BSP_USING_UART7) && !defined(BSP_USING_UART8)
-//     #error "Please define at least one BSP_USING_UARTx"
-// #endif
+#ifdef RT_USING_SERIAL
+#if !defined(BSP_USING_UART1) && !defined(BSP_USING_UART2) && \
+    !defined(BSP_USING_UART3) && !defined(BSP_USING_UART4) && \
+    !defined(BSP_USING_UART5) && !defined(BSP_USING_UART6) && \
+    !defined(BSP_USING_UART7) && !defined(BSP_USING_UART8)
+    #error "Please define at least one BSP_USING_UARTx"
+#endif
 
 struct at32_uart {
     char *name;
@@ -32,6 +32,17 @@ struct at32_uart {
     struct dma_config *dma_tx;
     rt_uint16_t uart_dma_flag;
     struct serial_device serial;
+    
+    crm_periph_clock_type per_clk;
+    crm_periph_clock_type tx_gpio_clk;
+    crm_periph_clock_type rx_gpio_clk;
+
+    uint32_t tx_port;
+    uint16_t tx_af;
+    uint16_t tx_pin;
+    uint32_t rx_port;
+    uint16_t rx_af;
+    uint16_t rx_pin;
 };
 
 
@@ -89,6 +100,49 @@ static struct at32_uart uart_config[] = {
 #endif
 };
 
+#ifdef BSP_USING_UART1
+static struct serial_device serial0;
+static struct at32_uart uart6 = {
+    .uart_periph = USART1,
+    .irqn = USART1_IRQn,
+    .per_clk = CRM_USART1_PERIPH_CLOCK,
+    .tx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
+    .rx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
+    .tx_port = GPIOA,
+    //.tx_af = GPIO_AF_8,
+    .tx_pin = GPIO_PINS_9,
+    .rx_port = GPIOA,
+    //.rx_af = GPIO_AF_8,
+    .rx_pin = GPIO_PINS_10,
+};
+
+
+static void at32_msp_usart_init(struct at32_uart* uart)
+{
+    gpio_init_type gpio_init_struct;
+
+    #if defined (__GNUC__) && !defined (__clang__)
+    setvbuf(stdout, NULL, _IONBF, 0);
+    #endif
+    /* enable the uart and gpio clock */
+    crm_periph_clock_enable(uart->tx_gpio_clk, TRUE);
+    crm_periph_clock_enable(uart->rx_gpio_clk, TRUE);
+    crm_periph_clock_enable(uart->per_clk, TRUE);
+
+    gpio_default_para_init(&gpio_init_struct);
+
+    /* configure the uart tx pin */
+    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+    gpio_init_struct.gpio_out_type  = GPIO_OUTPUT_PUSH_PULL;
+    gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+    gpio_init_struct.gpio_pins = uart->tx_pin;
+    gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+    gpio_init(uart->tx_port, &gpio_init_struct);
+
+    gpio_init_struct.gpio_pins = uart->rx_pin;
+    gpio_init(uart->rx_port, &gpio_init_struct);
+}
+
 #ifdef RT_SERIAL_USING_DMA
 static void at32_dma_config(struct serial_device *serial, rt_ubase_t flag);
 #endif
@@ -105,7 +159,7 @@ static rt_err_t at32_configure(struct serial_device *serial,
 
     RT_ASSERT(instance != RT_NULL);
 
-    //at32_msp_usart_init((void *)instance->uart_x);
+    at32_msp_usart_init(instance);
 
     usart_receiver_enable(instance->uart_x, TRUE);
     usart_transmitter_enable(instance->uart_x, TRUE);
@@ -991,6 +1045,28 @@ rt_err_t rt_hw_usart_init(void) {
     }
 
     return result;
+}
+
+rt_err_t drv_usart_init(void)
+{
+    rt_err_t rt_err = RT_EOK;
+    struct serial_configure config = SERIAL_DEFAULT_CONFIG;
+
+#ifdef USING_UART1
+    serial0.ops = &__usart_ops;
+    #ifdef SERIAL0_DEFAULT_CONFIG
+    struct serial_configure serial0_config = SERIAL0_DEFAULT_CONFIG;
+    serial0.config = serial0_config;
+    #else
+    serial0.config = config;
+    #endif
+
+    /* register serial device */
+    rt_err |= hal_serial_register(&serial0,
+                                  "serial0",
+                                  RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE | RT_DEVICE_FLAG_INT_RX,
+                                  &uart6);
+#endif /* USING_UART6 */
 }
 
 // #endif /* BSP_USING_SERIAL */

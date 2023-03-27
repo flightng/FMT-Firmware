@@ -17,6 +17,7 @@
 //#include "serial.h"
 
 rt_err_t rt_hw_usart_init(void);
+rt_err_t drv_usart_init(void);
 
 #endif /* __DRV_USART_H__ */
 

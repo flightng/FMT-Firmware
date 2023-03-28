@@ -104,11 +104,13 @@ struct at32_uart {
     crm_periph_clock_type rx_gpio_clk;
 
     uint32_t tx_port;
-    uint16_t tx_af;
     uint16_t tx_pin;
+    uint8_t  tx_pin_source;
+    uint8_t  tx_pin_mux;
     uint32_t rx_port;
-    uint16_t rx_af;
     uint16_t rx_pin;
+    uint8_t  rx_pin_source;
+    uint8_t  rx_pin_mux;
 };
 
 // /**
@@ -419,13 +421,16 @@ static struct at32_uart uart1 = {
     .per_clk = CRM_USART1_PERIPH_CLOCK,
     .tx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
     .rx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
-    .tx_port = (gpio_type *)GPIOA,
 
-    //.tx_af = GPIO_AF_8,
+    .tx_port = (gpio_type *)GPIOA,
     .tx_pin = GPIO_PINS_9,
+    .tx_pin_source = GPIO_PINS_SOURCE9,
+    .tx_pin_mux = GPIO_MUX_7,
+
     .rx_port = (gpio_type *)GPIOA,
-    //.rx_af = GPIO_AF_8,
     .rx_pin = GPIO_PINS_10,
+    .rx_pin_source = GPIO_PINS_SOURCE10,
+    .rx_pin_mux = GPIO_MUX_7,
 };
 
 
@@ -947,8 +952,8 @@ static void at32_uart_gpio_init(struct at32_uart* uart)
     gpio_init_struct.gpio_pins = uart->rx_pin;
     gpio_init((gpio_type *)uart->rx_port, &gpio_init_struct);
 
-    gpio_pin_mux_config((gpio_type *)uart->rx_port, GPIO_PINS_SOURCE9, GPIO_MUX_7);
-    gpio_pin_mux_config((gpio_type *)uart->rx_port, GPIO_PINS_SOURCE10, GPIO_MUX_7);
+    gpio_pin_mux_config((gpio_type *)uart->rx_port, uart->tx_pin_source, uart->tx_pin_mux);
+    gpio_pin_mux_config((gpio_type *)uart->rx_port, uart->rx_pin_source, uart->rx_pin_mux);
 }
 
 // static rt_err_t usart_configure(struct serial_device* serial, struct serial_configure* cfg)

@@ -946,6 +946,9 @@ static void at32_uart_gpio_init(struct at32_uart* uart)
 
     gpio_init_struct.gpio_pins = uart->rx_pin;
     gpio_init((gpio_type *)uart->rx_port, &gpio_init_struct);
+
+    gpio_pin_mux_config((gpio_type *)uart->rx_port, GPIO_PINS_SOURCE9, GPIO_MUX_7);
+    gpio_pin_mux_config((gpio_type *)uart->rx_port, GPIO_PINS_SOURCE10, GPIO_MUX_7);
 }
 
 // static rt_err_t usart_configure(struct serial_device* serial, struct serial_configure* cfg)

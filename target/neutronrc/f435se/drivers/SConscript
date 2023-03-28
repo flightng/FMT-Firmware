@@ -21,7 +21,7 @@ if GetDepend(['RT_USING_WDT']):
 #     else:
 #         src += ['drv_usart.c']
 
-src += ['drv_usart_gg.c']
+src += ['drv_usart_v3.c']
 
 if GetDepend(['BSP_USING_PWM']):
     src += ['drv_pwm.c']

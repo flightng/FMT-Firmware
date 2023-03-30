@@ -15,7 +15,7 @@
 #include "drv_config.h"
 #include <string.h>
 
-#ifdef RT_USING_SPI
+//#ifdef RT_USING_SPI
 #if !defined(BSP_USING_SPI1) && !defined(BSP_USING_SPI2) && \
     !defined(BSP_USING_SPI3) && !defined(BSP_USING_SPI4)
 #error "Please define at least one BSP_USING_SPIx"
@@ -878,4 +878,60 @@ int rt_hw_spi_init(void)
 
 INIT_BOARD_EXPORT(rt_hw_spi_init);
 
+/** \brief init and register gd32 spi bus.
+ *
+ * \param SPI: GD32 SPI, e.g: SPI1,SPI2,SPI3.
+ * \param stm32_spi: stm32 spi bus struct.
+ * \param spi_bus_name: spi bus name, e.g: "spi1"
+ * \return rt_err_t RT_EOK for success
+ */
+static rt_err_t at32_spi_register(spi_type* spi_x,
+                                  struct at32_spi* at32_spi_,
+                                  const char* spi_bus_name)
+{
+   if((spi_x == SPI1)
+   {
+    crm_periph_clock_enable(CRM_SPI1_PERIPH_CLOCK, TRUE);
+    crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
+
+
+    /*Configure SPI SCK pin*/
+    GPIO_InitStructure.gpio_pins  = GPIO_PINS_5;
+    GPIO_InitStructure.gpio_mode = GPIO_MODE_MUX;
+    GPIO_InitStructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+    gpio_init(FLASH_SPI_SCK_GPIO, &GPIO_InitStructure);
+
+     /*Configure SPI MISO pin*/
+    GPIO_InitStructure.gpio_pins  = GPIO_PINS_6;
+    gpio_init(FLASH_SPI_MISO_GPIO, &GPIO_InitStructure);
+     
+    /*Configure SPI MOSI pin*/
+    GPIO_InitStructure.gpio_pins  = GPIO_PINS_7;
+    gpio_init(FLASH_SPI_MOSI_GPIO, &GPIO_InitStructure);
+     
+    //spi_crc_polynomial_set(SPI1, 7); 
+#ifdef SPI_USE_DMA
+        //TODO
 #endif
+    }
+   else
+   {
+    return RT_ENOSYS;
+   }
+
+    return rt_spi_bus_register(&at32_spi_->rt_spi_bus, spi_bus_name, &at32_spi_ops);
+}
+
+rt_err_t drv_spi_init(void)
+{
+    static struct at32_spi at32_spi0;
+    static struct at32_spi at32_spi1;
+
+    RT_TRY(at32_spi_register(spi_config[0].spi_x, &at32_spi0,spi_config[0].spi_name));
+
+    {
+
+    }
+}
+
+//#endif

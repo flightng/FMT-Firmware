@@ -13,7 +13,7 @@
 
 #include <rtthread.h>
 #include "dma_config.h"
-
+#include "board_device.h"
 #ifdef __cplusplus
 extern "C" {
 #endif

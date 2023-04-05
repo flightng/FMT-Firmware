@@ -13,16 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *****************************************************************************/
-#include <firmament.h>
-
-#include "drv_usart.h"
+#include "drv_usart_v3.h"
 #include "hal/serial/serial.h"
 
 #include "drv_common.h"
-#include "drv_usart.h"
 #include "drv_config.h"
 #include "board_device.h"
-#include "hal/serial/serial.h"
 
 #define SET_BIT(REG, BIT)   ((REG) |= (BIT))
 #define CLEAR_BIT(REG, BIT) ((REG) &= ~(BIT))

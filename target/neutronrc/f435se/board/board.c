@@ -39,7 +39,7 @@
 // #include "drv_pwm.h"
 // #include "drv_rc.h"
 // #include "drv_sdio.h"
-// #include "drv_spi.h"
+#include "drv_spi.h"
 #include "drv_systick.h"
 #include "drv_usart_v3.h"
 // #include "drv_usbd_cdc.h"
@@ -253,7 +253,7 @@ void bsp_early_initialize(void)
     RT_CHECK(rt_hw_pin_init());
 
     // /* spi driver init */
-    // RT_CHECK(rt_hw_spi_init());
+    RT_CHECK(drv_spi_init());
 
     // /* i2c driver init */
     // // RT_CHECK(rt_hw_i2c_init());

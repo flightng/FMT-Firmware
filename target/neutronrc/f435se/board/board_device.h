@@ -20,13 +20,11 @@
 // Device Name
 #define FMTIO_DEVICE_NAME "serial5"
 
-#define SPI1_SPEED_HZ 7000000
-
-#define RT_USING_PIN
 //gpio 
+#define RT_USING_PIN
+
 //uart 
 #define RT_USING_SERIAL
-
 #define BSP_USING_UART1
 #define BSP_USING_UART2
 #define BSP_USING_UART3
@@ -34,16 +32,14 @@
 #define BSP_USING_UART5
 #define BSP_USING_UART8
 
-//GPIO
 //SPI
+#define SPI1_SPEED_HZ 7000000
+#define BSP_USING_SPI
 #define BSP_USING_SPI1
 #define BSP_USING_SPI2
 #define BSP_USING_SPI3
 
 //I2C
 #define BSP_USING_I2C3
-
-
-
 
 #endif

@@ -10,20 +10,47 @@
  * 2023-01-31     shelton      add support f421/f425
  */
 
-#include "drv_common.h"
-#include "drv_spi.h"
-#include "drv_config.h"
 #include <string.h>
+#include "hal/spi/spi.h"
 
-//#ifdef RT_USING_SPI
+#include "drv_spi.h"
+#include "drv_common.h"
+#include "drv_config.h"
+#include "drv_dma.h"
+
+#include "board_device.h"
+
+#define RT_USING_SPI
+#ifdef RT_USING_SPI
 #if !defined(BSP_USING_SPI1) && !defined(BSP_USING_SPI2) && \
     !defined(BSP_USING_SPI3) && !defined(BSP_USING_SPI4)
 #error "Please define at least one BSP_USING_SPIx"
 #endif
 
 //#define DRV_DEBUG
-#define LOG_TAG             "drv.pwm"
-#include <drv_log.h>
+// #define LOG_TAG             "drv.pwm"
+// #include <drv_log.h>
+struct at32_spi_config
+{
+    spi_type *spi_x;
+    const char *spi_name;
+    IRQn_Type irqn;
+    struct dma_config *dma_rx;
+    struct dma_config *dma_tx;
+    rt_uint16_t spi_dma_flag;
+};
+
+struct at32_spi
+{
+    struct at32_spi_config *config;
+    struct rt_spi_bus spi_bus;
+};
+
+struct at32_spi_cs
+{
+    gpio_type *gpio_x;
+    uint32_t gpio_pin;
+};
 
 enum
 {
@@ -124,7 +151,7 @@ static rt_err_t configure(struct rt_spi_device* device,
     RT_ASSERT(device != RT_NULL);
     RT_ASSERT(configuration != RT_NULL);
 
-    at32_msp_spi_init(instance->config->spi_x);
+    //at32_msp_spi_init(instance->config->spi_x);
 
     /* data_width */
     if(configuration->data_width <= 8)
@@ -889,27 +916,28 @@ static rt_err_t at32_spi_register(spi_type* spi_x,
                                   struct at32_spi* at32_spi_,
                                   const char* spi_bus_name)
 {
-   if((spi_x == SPI1)
+   if(spi_x == SPI1)
    {
     crm_periph_clock_enable(CRM_SPI1_PERIPH_CLOCK, TRUE);
     crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
 
-
+    gpio_init_type GPIO_InitStructure;
     /*Configure SPI SCK pin*/
     GPIO_InitStructure.gpio_pins  = GPIO_PINS_5;
     GPIO_InitStructure.gpio_mode = GPIO_MODE_MUX;
     GPIO_InitStructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-    gpio_init(FLASH_SPI_SCK_GPIO, &GPIO_InitStructure);
+    gpio_init(GPIOA, &GPIO_InitStructure);
 
      /*Configure SPI MISO pin*/
     GPIO_InitStructure.gpio_pins  = GPIO_PINS_6;
-    gpio_init(FLASH_SPI_MISO_GPIO, &GPIO_InitStructure);
+    gpio_init(GPIOA, &GPIO_InitStructure);
      
     /*Configure SPI MOSI pin*/
     GPIO_InitStructure.gpio_pins  = GPIO_PINS_7;
-    gpio_init(FLASH_SPI_MOSI_GPIO, &GPIO_InitStructure);
+    gpio_init(GPIOA, &GPIO_InitStructure);
      
-    //spi_crc_polynomial_set(SPI1, 7); 
+     //TO DO，should have crc???
+    //spi_crc_polynomial_set(SPI1, 7);  // 
 #ifdef SPI_USE_DMA
         //TODO
 #endif
@@ -919,7 +947,7 @@ static rt_err_t at32_spi_register(spi_type* spi_x,
     return RT_ENOSYS;
    }
 
-    return rt_spi_bus_register(&at32_spi_->rt_spi_bus, spi_bus_name, &at32_spi_ops);
+    return rt_spi_bus_register(&at32_spi_->spi_bus, spi_bus_name, &at32_spi_ops);
 }
 
 rt_err_t drv_spi_init(void)
@@ -927,11 +955,11 @@ rt_err_t drv_spi_init(void)
     static struct at32_spi at32_spi0;
     static struct at32_spi at32_spi1;
 
-    RT_TRY(at32_spi_register(spi_config[0].spi_x, &at32_spi0,spi_config[0].spi_name));
-
+    /* register SPI1 bus */
+    RT_TRY(at32_spi_register(spi_config[SPI1_INDEX].spi_x, &at32_spi0,spi_config[SPI1_INDEX].spi_name));
+/* attach spi_device_0 (imu) to spi1 */
     {
-
+      rt_hw_spi_device_attach(spi_config[SPI1_INDEX].spi_name,"spi1_dev0",GPIOA,GPIO_PINS_4);
     }
 }
-
-//#endif
+#endif

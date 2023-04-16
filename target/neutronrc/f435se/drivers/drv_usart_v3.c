@@ -418,12 +418,12 @@ static struct at32_uart uart1 = {
     .tx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
     .rx_gpio_clk = CRM_GPIOA_PERIPH_CLOCK,
 
-    .tx_port = (gpio_type *)GPIOA,
+    .tx_port =(uint32_t) GPIOA,
     .tx_pin = GPIO_PINS_9,
     .tx_pin_source = GPIO_PINS_SOURCE9,
     .tx_pin_mux = GPIO_MUX_7,
 
-    .rx_port = (gpio_type *)GPIOA,
+    .rx_port = (uint32_t) GPIOA,
     .rx_pin = GPIO_PINS_10,
     .rx_pin_source = GPIO_PINS_SOURCE10,
     .rx_pin_mux = GPIO_MUX_7,
@@ -1418,6 +1418,7 @@ rt_err_t drv_usart_init(void)
                                   "serial0",
                                   RT_DEVICE_FLAG_RDWR | RT_DEVICE_FLAG_STANDALONE | RT_DEVICE_FLAG_INT_RX,
                                   &uart1);
-#endif /* USING_UART6 */
+#endif /* USING_UART1 */
+    return  rt_err;
 }
 

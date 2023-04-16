@@ -922,22 +922,16 @@ static rt_err_t at32_spi_register(spi_type* spi_x,
     crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
 
     gpio_init_type GPIO_InitStructure;
-    /*Configure SPI SCK pin*/
-    GPIO_InitStructure.gpio_pins  = GPIO_PINS_5;
+    /*Configure SPI SCK MISO MOSI pin*/
+    GPIO_InitStructure.gpio_pins  = GPIO_PINS_5 | GPIO_PINS_6 |GPIO_PINS_7 ;
     GPIO_InitStructure.gpio_mode = GPIO_MODE_MUX;
     GPIO_InitStructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+    GPIO_InitStructure.gpio_out_type=GPIO_OUTPUT_PUSH_PULL;
+    GPIO_InitStructure.gpio_pull=GPIO_PULL_UP;
     gpio_init(GPIOA, &GPIO_InitStructure);
-
-     /*Configure SPI MISO pin*/
-    GPIO_InitStructure.gpio_pins  = GPIO_PINS_6;
-    gpio_init(GPIOA, &GPIO_InitStructure);
-     
-    /*Configure SPI MOSI pin*/
-    GPIO_InitStructure.gpio_pins  = GPIO_PINS_7;
-    gpio_init(GPIOA, &GPIO_InitStructure);
-     
-     //TO DO，should have crc???
-    //spi_crc_polynomial_set(SPI1, 7);  // 
+    gpio_pin_mux_config(GPIOA,5,GPIO_MUX_5);
+    gpio_pin_mux_config(GPIOA,6,GPIO_MUX_5);
+    gpio_pin_mux_config(GPIOA,7,GPIO_MUX_5);
 #ifdef SPI_USE_DMA
         //TODO
 #endif
@@ -953,13 +947,12 @@ static rt_err_t at32_spi_register(spi_type* spi_x,
 rt_err_t drv_spi_init(void)
 {
     static struct at32_spi at32_spi0;
-    static struct at32_spi at32_spi1;
 
     /* register SPI1 bus */
     RT_TRY(at32_spi_register(spi_config[SPI1_INDEX].spi_x, &at32_spi0,spi_config[SPI1_INDEX].spi_name));
 /* attach spi_device_0 (imu) to spi1 */
     {
-      rt_hw_spi_device_attach(spi_config[SPI1_INDEX].spi_name,"spi1_dev0",GPIOA,GPIO_PINS_4);
+     return  rt_hw_spi_device_attach(spi_config[SPI1_INDEX].spi_name,"spi1_dev0",GPIOA,GPIO_PINS_4);
     }
 }
 #endif

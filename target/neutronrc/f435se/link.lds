@@ -1,5 +1,7 @@
 /*
  * linker script for AT32 with GNU ld
+ * from rt-thread at32 bsp
+ * modified by shanggl
  */
 
 /* Program Entry, set to mark it as "used" and avoid gc */
@@ -9,7 +11,7 @@ MEMORY
     RAM (rw) : ORIGIN = 0x20000000, LENGTH =  384k /* 384K sram */
 }
 ENTRY(Reset_Handler)
-_system_stack_size = 0x200;
+_system_stack_size = 0x800; /*2kb stack*/
 
 SECTIONS
 {
@@ -85,6 +87,10 @@ SECTIONS
 
         _etext = .;
     } > ROM = 0
+
+    .ARM.extab : {
+        *(.ARM.extab* .gnu.linkonce.armextab.*)
+    } > ROM
 
     /* .ARM.exidx is sorted, so has to go in its own output section.  */
     __exidx_start = .;

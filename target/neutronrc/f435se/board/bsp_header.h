@@ -22,6 +22,6 @@
 
 
 // /* FPU Library */
-// #include <arm_math.h>
+#include <arm_math.h>
 
 #endif

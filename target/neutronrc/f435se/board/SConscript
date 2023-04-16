@@ -20,7 +20,7 @@ elif rtconfig.PLATFORM in ['iccarm']:
     src += [startup_path_prefix + '/AT32F435_437_Firmware_Library/cmsis/cm4/device_support/startup/iar/startup_at32f435_437.s']
 
 #NEUTRONRCF435SE MCU TYPE ,CHANGE THIS WHEN USE OTHER MCUS
-CPPDEFINES = ['AT32F435RGT7']
+CPPDEFINES = ['AT32F437VMT7']
 
 group = DefineGroup('Board', src, depend = [''], CPPPATH = inc,CPPDEFINES = CPPDEFINES)
 

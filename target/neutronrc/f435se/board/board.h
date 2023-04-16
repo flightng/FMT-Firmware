@@ -24,12 +24,12 @@ extern "C" {
 #endif
 
 // Board Information
-#define TARGET_NAME  "NEUTF43TSE"
+#define TARGET_NAME  "NEUTF435SE"
 
 // Interupt Vector Offset
 #define INT_VECTOR_OFFSET 0x0
 // Internal SRAM memory size[Kbytes]
-#define SYSTEM_TOTAL_MEM_SIZE (384 * 1024) // 384K
+#define SYSTEM_TOTAL_MEM_SIZE (384*1024) //384k
 // Internal Free SRAM memory used by kernel (e.g, rt_malloc)
 #ifdef __ICCARM__
 // Use *.icf ram symbal, to avoid hardcode.

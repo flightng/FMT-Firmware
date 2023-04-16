@@ -78,7 +78,7 @@
             "preLaunchTask": "Build AT32F4",
             // "showDevDebugOutput": "raw"
             //todo: 
-        }
+        },
         {
             "name": "AT32 Debug Jlink",
             "cwd": "${workspaceRoot}",

@@ -3,9 +3,9 @@
  *
  * Code generated for Simulink model 'FMS'.
  *
- * Model version                  : 1.1988
+ * Model version                  : 1.1986
  * Simulink Coder version         : 9.0 (R2018b) 24-May-2018
- * C/C++ source code generated on : Mon Mar 27 10:39:39 2023
+ * C/C++ source code generated on : Fri Mar 17 19:50:22 2023
  *
  * Target selection: ert.tlc
  * Embedded hardware selection: ARM Compatible->ARM Cortex
@@ -6584,8 +6584,8 @@ void FMS_step(void)
        *  Inport: '<Root>/Pilot_Cmd'
        *  SignalConversion: '<S16>/Signal Copy2'
        */
-      rtb_Saturation_bu = fmodf(floorf(FMS_PARAM.MANUAL_ROLL_REV *
-        FMS_U.Pilot_Cmd.stick_roll * 500.0F + 1500.0F), 65536.0F);
+      rtb_Saturation_bu = fmodf(floorf(500.0F * FMS_U.Pilot_Cmd.stick_roll +
+        1500.0F), 65536.0F);
 
       /* End of Outputs for SubSystem: '<S2>/FMS_Input' */
       rtb_DataTypeConversion1_l = (uint16_T)(rtb_Saturation_bu < 0.0F ? (int32_T)
@@ -6622,8 +6622,8 @@ void FMS_step(void)
        *  Inport: '<Root>/Pilot_Cmd'
        *  SignalConversion: '<S16>/Signal Copy2'
        */
-      rtb_Saturation_bu = fmodf(floorf(FMS_PARAM.MANUAL_PITCH_REV *
-        FMS_U.Pilot_Cmd.stick_pitch * -500.0F + 1500.0F), 65536.0F);
+      rtb_Saturation_bu = fmodf(floorf(-500.0F * FMS_U.Pilot_Cmd.stick_pitch +
+        1500.0F), 65536.0F);
 
       /* End of Outputs for SubSystem: '<S2>/FMS_Input' */
 
@@ -6644,8 +6644,8 @@ void FMS_step(void)
        *  Inport: '<Root>/Pilot_Cmd'
        *  SignalConversion: '<S16>/Signal Copy2'
        */
-      rtb_Saturation_bu = fmodf(floorf(FMS_PARAM.MANUAL_YAW_REV *
-        FMS_U.Pilot_Cmd.stick_yaw * 500.0F + 1500.0F), 65536.0F);
+      rtb_Saturation_bu = fmodf(floorf(500.0F * FMS_U.Pilot_Cmd.stick_yaw +
+        1500.0F), 65536.0F);
 
       /* End of Outputs for SubSystem: '<S2>/FMS_Input' */
 

@@ -41,7 +41,7 @@ if PLATFORM == 'gcc':
     OBJCPY = PREFIX + 'objcopy'
 
     DEVICE = '  -mcpu=cortex-m4 -mthumb -mfpu=fpv4-sp-d16 -mfloat-abi=hard -ffunction-sections -fdata-sections'
-    CFLAGS = DEVICE + ' -g -Wall -Wstrict-aliasing=0 -Wno-uninitialized -Wno-unused-function -Wno-switch -D__VFP_FP__ -DARM_MATH_CM4'
+    CFLAGS = DEVICE + ' -g -Wall -Wstrict-aliasing=0 -Wno-uninitialized -Wno-unused-function -Wno-switch -D__VFP_FP__ -DARM_MATH_CM4 -Wno-address-of-packed-member'
     AFLAGS = ' -c' + DEVICE + ' -x assembler-with-cpp -Wa,-mimplicit-it=thumb '
     LFLAGS = DEVICE + ' -lm -lgcc -lc' + \
         ' -nostartfiles -Wl,--gc-sections,-Map=build/fmt_' + BOARD + '.map,-cref,-u,Reset_Handler -T link.lds'
@@ -57,7 +57,7 @@ if PLATFORM == 'gcc':
 
     CXXFLAGS = CFLAGS
     CFLAGS += ' -std=c99'
-    CXXFLAGS += ' -std=c++14'
+    CXXFLAGS += ' -std=c++17'
 
     POST_ACTION = OBJCPY + ' -O binary $TARGET build/fmt_' + BOARD + '.bin\n' + SIZE + ' $TARGET \n'
     

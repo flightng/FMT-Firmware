@@ -29,7 +29,7 @@
 // #include "driver/imu/icm20948.h"
 #include "driver/imu/icm42688p.h"
 // #include "driver/mag/bmm150.h"
-// #include "driver/mtd/w25qxx.h"
+#include "driver/mtd/w25qxx.h"
 // #include "driver/rgb_led/aw2023.h"
 // #include "driver/vision_flow/mtf_01.h"
 // #include "drv_adc.h"
@@ -75,11 +75,11 @@
 #define MATCH(a, b)     (strcmp(a, b) == 0)
 #define SYS_CONFIG_FILE "/sys/sysconfig.toml"
 
-// static const struct dfs_mount_tbl mnt_table[] = {
-//     { "sd0", "/", "elm", 0, NULL },
-//     { "mtdblk0", "/mnt/mtdblk0", "elm", 0, NULL },
-//     { NULL } /* NULL indicate the end */
-// };
+static const struct dfs_mount_tbl mnt_table[] = {
+//    { "sd0", "/", "elm", 0, NULL },
+    { "mtdblk0", "/", "elm", 0, NULL },
+    { NULL } /* NULL indicate the end */
+};
 
 static toml_table_t* __toml_root_tab = NULL;
 
@@ -379,9 +379,9 @@ void bsp_initialize(void)
 
     // /* init storage devices */
     // RT_CHECK(drv_sdio_init());
-    // RT_CHECK(drv_w25qxx_init("spi1_dev0", "mtdblk0"));
+    RT_CHECK(drv_w25qxx_init("spi3_dev0", "mtdblk0"));
     // /* init file system */
-    // FMT_CHECK(file_manager_init(mnt_table));
+    FMT_CHECK(file_manager_init(mnt_table));
 
     // /* init parameter system */
     FMT_CHECK(param_init());
@@ -403,7 +403,7 @@ void bsp_initialize(void)
 #else
     /* init onboard sensors */
     // RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
-    RT_CHECK(drv_icm42688_init("spi2_dev0", "gyro0", "accel0", 0));
+    //RT_CHECK(drv_icm42688_init("spi2_dev0", "gyro0", "accel0", 0));
     // RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
     // RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
 
@@ -412,7 +412,7 @@ void bsp_initialize(void)
     // RT_CHECK(gps_m8n_init("serial4", "gps"));
 
     // /* register sensor to sensor hub */
-    FMT_CHECK(register_sensor_imu("gyro0", "accel0", 0));
+    //FMT_CHECK(register_sensor_imu("gyro0", "accel0", 0));
     // FMT_CHECK(register_sensor_imu("gyro1", "accel1", 1));
     // FMT_CHECK(register_sensor_mag("mag0", 0));
     // FMT_CHECK(register_sensor_barometer("barometer"));
@@ -438,7 +438,7 @@ void bsp_initialize(void)
 void bsp_post_initialize(void)
 {
     /* toml system configure */
-    //__toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
+    __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
     if (!__toml_root_tab) {
         /* use default system configuration */
         __toml_root_tab = toml_parse_config_string(default_conf);

@@ -25,4 +25,5 @@
     },
     "openocd.host":"127.0.0.1",
     "openocd.path": "/home/emsr/Developer/mcu/toolchain/openocd/bin/openocd",
+    "cortex-debug.variableUseNaturalFormat": true,
 }

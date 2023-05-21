@@ -69,7 +69,7 @@ void task_vehicle_entry(void* parameter)
 #endif
                 pilot_cmd_collect();
                 gcs_cmd_collect();
-                mission_data_collect();
+                //mission_data_collect();
 
 #ifdef FMT_USING_SIH
                 /* run Plant model */

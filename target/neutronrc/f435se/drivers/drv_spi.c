@@ -349,45 +349,17 @@ static rt_err_t at32_spi_register(spi_type* spi_periph,
         gpio_init_type gpio_initstructure;
 
         crm_periph_clock_enable(CRM_SPI1_PERIPH_CLOCK, TRUE);
-        crm_periph_clock_enable(CRM_GPIOF_PERIPH_CLOCK, TRUE);
+        crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
 
-        gpio_initstructure.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
         gpio_initstructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-
-        /* sck */
-        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
-        gpio_initstructure.gpio_mode           = GPIO_MODE_MUX;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_10;
-        gpio_init(GPIOF, &gpio_initstructure);
-        gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE10, GPIO_MUX_9);
-
-        /* miso */
-        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_9;
-        gpio_init(GPIOF, &gpio_initstructure);
-        gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE9, GPIO_MUX_10);
-
-        /* mosi */
-        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_8;
-        gpio_init(GPIOF, &gpio_initstructure);
-        gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE8, GPIO_MUX_10);
-
-        /*IO2*/
-        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_7;
-        gpio_init(GPIOF, &gpio_initstructure);
-        gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE7, GPIO_MUX_9);
-
-        /*IO3*/
-        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_6;
-        gpio_init(GPIOF, &gpio_initstructure);
-        gpio_pin_mux_config(GPIOF, GPIO_PINS_SOURCE6, GPIO_MUX_9);
-
-        // IO2 and IO3 pullup to VDD
-        gpio_bits_set(GPIOF,GPIO_PINS_6);
-        gpio_bits_set(GPIOF,GPIO_PINS_7);
+        gpio_initstructure.gpio_out_type = GPIO_OUTPUT_PUSH_PULL;
+        gpio_initstructure.gpio_mode = GPIO_MODE_MUX;
+        gpio_initstructure.gpio_pins = GPIO_PINS_5 | GPIO_PINS_6 | GPIO_PINS_7;
+        gpio_initstructure.gpio_pull = GPIO_PULL_UP;
+        gpio_init(GPIOA, &gpio_initstructure);
+        gpio_pin_mux_config(GPIOA, GPIO_PINS_SOURCE5, GPIO_MUX_5);
+        gpio_pin_mux_config(GPIOA, GPIO_PINS_SOURCE6, GPIO_MUX_5);
+        gpio_pin_mux_config(GPIOA, GPIO_PINS_SOURCE7, GPIO_MUX_5);
 #ifdef SPI_USE_DMA
         //TODO
 #endif
@@ -470,17 +442,17 @@ rt_err_t drv_spi_init(void)
     /* attach spi_device_0 to spi2 */
     {
         static struct rt_spi_device rt_spi1_dev0;
-        static struct at32_spi_cs spi1_cs0 = { .gpio_periph = GPIOG, .pin = GPIO_PINS_6 };
+        static struct at32_spi_cs spi1_cs0 = { .gpio_periph = GPIOA, .pin = GPIO_PINS_4 };
     
-        crm_periph_clock_enable(CRM_GPIOG_PERIPH_CLOCK, TRUE);
+        crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
         gpio_init_type gpio_initstructure;
         /* software cs, pd0 as a general io to control flash cs */
         gpio_initstructure.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
         gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
         gpio_initstructure.gpio_mode           = GPIO_MODE_OUTPUT;
         gpio_initstructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
-        gpio_initstructure.gpio_pins           = GPIO_PINS_6;
-        gpio_init(GPIOG, &gpio_initstructure);
+        gpio_initstructure.gpio_pins           = GPIO_PINS_4;
+        gpio_init(GPIOA, &gpio_initstructure);
 
         /* set CS pin by default */
         gpio_bits_set(spi1_cs0.gpio_periph, spi1_cs0.pin);

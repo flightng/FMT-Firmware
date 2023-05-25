@@ -36,7 +36,7 @@
 // #include "drv_buzzer.h"
 #include "drv_gpio.h"
 // #include "drv_soft_i2c.h"
-// #include "drv_pwm.h"
+#include "drv_pwm.h"
 // #include "drv_rc.h"
 // #include "drv_sdio.h"
 #include "drv_spi.h"
@@ -353,7 +353,7 @@ void bsp_early_initialize(void)
     // // RT_CHECK(rt_hw_i2c_init());
 
     // /* pwm driver init */
-    // RT_CHECK(drv_pwm_init());
+    RT_CHECK(drv_pwm_init());
 
     /* buzzer(pwm) driver init */
     // RT_CHECK(drv_buzzer_init());

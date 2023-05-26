@@ -39,5 +39,18 @@ target = "NEUTF435SE"\n
 // 	type = "usb"\n
 // 	name = "usbd0"\n
 //     auto-switch = true
-);
+
 // clang-format on
+
+[actuator]\n
+    [[actuator.devices]]\n
+    protocol = "pwm"\n
+    name = "main_out"\n
+    freq = 400\n
+	
+    // [[actuator.mappings]]\n
+    // from = "control_out"\n
+    // to = "main_out"\n
+    // chan-map = [[1,2,3,4],[1,2,3,4]]\n
+
+);

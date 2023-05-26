@@ -459,7 +459,7 @@ void bsp_post_initialize(void)
 
 #if defined(FMT_HIL_WITH_ACTUATOR) || (!defined(FMT_USING_HIL) && !defined(FMT_USING_SIH))
     /* init actuator */
-    // FMT_CHECK(actuator_init());
+    FMT_CHECK(actuator_init());
 #endif
 
     /* start device message queue work */

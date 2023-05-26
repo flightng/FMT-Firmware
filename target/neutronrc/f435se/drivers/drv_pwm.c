@@ -83,7 +83,7 @@ static void pwm_timer_init(void)
     /* get system clock */
     crm_clocks_freq_get(&crm_clocks_freq_struct);
     /* compute the prescaler value */
-    prescalervalue = crm_clocks_freq_struct.apb1_freq  / TIMER_FREQUENCY - 1;
+    prescalervalue = crm_clocks_freq_struct.apb1_freq * 2 / TIMER_FREQUENCY - 1;
 
     /* TMR4 time base configuration */
     tmr_base_init(TMR4, (PWM_ARR(__pwm_freq) - 1), prescalervalue);

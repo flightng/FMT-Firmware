@@ -19,6 +19,7 @@
 #include "hal/rc/ppm.h"
 #include "hal/rc/rc.h"
 #include "hal/rc/sbus.h"
+#include "hal/rc/crsf.h"
 
 #ifndef min //mod by prife
     #define min(x, y) (x < y ? x : y)
@@ -39,6 +40,7 @@
 
 static ppm_decoder_t ppm_decoder;
 static sbus_decoder_t sbus_decoder;
+static crsf_decoder_t crsf_decoder;
 
 void TIMER0_BRK_TIMER8_IRQHandler(void)
 {
@@ -175,6 +177,44 @@ static rt_err_t sbus_lowlevel_init(void)
     return RT_EOK;
 }
 
+static rt_err_t crsf_lowlevel_init(void)
+{
+    gpio_init_type gpio_init_struct;
+
+    crm_periph_clock_enable(CRM_GPIOA_PERIPH_CLOCK, TRUE);
+    crm_periph_clock_enable(CRM_USART2_PERIPH_CLOCK, TRUE);
+
+    gpio_default_para_init(&gpio_init_struct);
+
+    /* configure the uart tx pin */
+    gpio_init_struct.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+    gpio_init_struct.gpio_out_type  = GPIO_OUTPUT_PUSH_PULL;
+    gpio_init_struct.gpio_mode = GPIO_MODE_MUX;
+    gpio_init_struct.gpio_pins = GPIO_PINS_2|GPIO_PINS_3;
+    gpio_init_struct.gpio_pull = GPIO_PULL_NONE;
+    gpio_init(GPIOA, &gpio_init_struct);
+
+    gpio_pin_mux_config(GPIOA,GPIO_PINS_SOURCE2, GPIO_MUX_7);
+    gpio_pin_mux_config(GPIOA,GPIO_PINS_SOURCE3, GPIO_MUX_7);
+
+    nvic_irq_enable(USART2_IRQn, 1, 0);
+    usart_interrupt_enable(USART2, USART_RDBF_INT, TRUE);
+    usart_transmitter_enable(USART2, TRUE);
+    usart_hardware_flow_control_set(USART2, USART_HARDWARE_FLOW_NONE);
+
+    usart_data_bit_num_type data_bit;
+    usart_stop_bit_num_type stop_bit;
+    usart_parity_selection_type parity_mode;
+    data_bit = USART_DATA_8BITS;
+    stop_bit = USART_STOP_1_BIT;
+    parity_mode = USART_PARITY_NONE;
+    usart_parity_selection_config(USART2, parity_mode);
+    usart_init(USART2, cfg->baud_rate, data_bit, stop_bit);
+    usart_enable(USART2, TRUE);
+    return RT_EOK;
+}
+
+
 static rt_err_t rc_control(rc_dev_t rc, int cmd, void* arg)
 {
     switch (cmd) {
@@ -185,6 +225,8 @@ static rt_err_t rc_control(rc_dev_t rc, int cmd, void* arg)
             updated = sbus_data_ready(&sbus_decoder);
         } else if (rc->config.protocol == RC_PROTOCOL_PPM) {
             updated = ppm_data_ready(&ppm_decoder);
+        }else if(rc->config.protocol == RC_PROTOCOL_CRSF){
+            updated = crsf_data_ready(&crsf_decoder); 
         }
 
         *(uint8_t*)arg = updated;
@@ -235,6 +277,24 @@ static rt_uint16_t rc_read(rc_dev_t rc, rt_uint16_t chan_mask, rt_uint16_t* chan
 
         ppm_unlock(&ppm_decoder);
     }
+    else ifrc->config.protocol == RC_PROTOCOL_CRSF)
+    {
+        if (crsf_data_ready(&crsf_decoder) == 0) {
+            /* no data received, just return */
+            return 0;
+        }
+
+        crsf_lock(&crsf_decoder);
+
+        for (uint8_t i = 0; i < min(rc->config.channel_num, crsf_decoder.rc_count); i++) {
+            *(index++) = crsf_decoder._channels[i];
+            rb += 2;
+        }
+        crsf_data_clear(&sbus_decoder);
+
+        crsf_unlock(&sbus_decoder);
+
+    }
 
     return rb;
 }
@@ -252,13 +312,16 @@ static struct rc_device rc_dev = {
 
 rt_err_t drv_rc_init(void)
 {
-    /* init ppm driver */
-    RT_TRY(ppm_lowlevel_init());
-    /* init ppm decoder */
-    RT_TRY(ppm_decoder_init(&ppm_decoder, PPM_DECODER_FREQUENCY));
+    // /* init ppm driver */
+    // RT_TRY(ppm_lowlevel_init());
+    // /* init ppm decoder */
+    // RT_TRY(ppm_decoder_init(&ppm_decoder, PPM_DECODER_FREQUENCY));
 
-    RT_TRY(sbus_lowlevel_init());
-    RT_TRY(sbus_decoder_init(&sbus_decoder));
+    // RT_TRY(sbus_lowlevel_init());
+    // RT_TRY(sbus_decoder_init(&sbus_decoder));
+
+    RT_TRY(crsf_lowlevel_init());
+    RT_TRY(crsf_decoder_init(&crsf_decoder));
 
     RT_CHECK(hal_rc_register(&rc_dev, "rc", RT_DEVICE_FLAG_RDWR, NULL));
 

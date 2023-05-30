@@ -42,45 +42,79 @@ static ppm_decoder_t ppm_decoder;
 static sbus_decoder_t sbus_decoder;
 static crsf_decoder_t crsf_decoder;
 
-void TIMER0_BRK_TIMER8_IRQHandler(void)
-{
-    /* enter interrupt */
+// void TIMER0_BRK_TIMER8_IRQHandler(void)
+// {
+//     /* enter interrupt */
+//     rt_interrupt_enter();
+
+//     if (SET == timer_interrupt_flag_get(TIMER8, TIMER_INT_CH1)) {
+//         /* clear channel 0 interrupt bit */
+//         timer_interrupt_flag_clear(TIMER8, TIMER_INT_CH1);
+
+//         uint32_t ic_val = timer_channel_capture_value_register_read(TIMER8, TIMER_CH_1) + 1;
+//         ppm_update(&ppm_decoder, ic_val);
+//     }
+
+//     /* leave interrupt */
+//     rt_interrupt_leave();
+// }
+
+// void USART5_IRQHandler(void)
+// {
+//     uint8_t ch;
+//     /* enter interrupt */
+//     rt_interrupt_enter();
+
+//     if ((usart_interrupt_flag_get(USART5, USART_INT_FLAG_RBNE) != RESET)) {
+//         while (usart_flag_get(USART5, USART_FLAG_RBNE) != RESET) {
+//             ch = (uint8_t)usart_data_receive(USART5);
+//             sbus_input(&sbus_decoder, &ch, 1);
+//         }
+
+//         /* if it's reading sbus data, we just parse it later */
+//         if (!sbus_islock(&sbus_decoder)) {
+//             sbus_update(&sbus_decoder);
+//         }
+
+//         /* Clear RXNE interrupt flag */
+//         usart_flag_clear(USART5, USART_FLAG_RBNE);
+//     }
+
+//     /* leave interrupt */
+//     rt_interrupt_leave();
+// }
+
+void USART2_IRQHandler(void) {
+
+    uint8_t ch ;
     rt_interrupt_enter();
 
-    if (SET == timer_interrupt_flag_get(TIMER8, TIMER_INT_CH1)) {
-        /* clear channel 0 interrupt bit */
-        timer_interrupt_flag_clear(TIMER8, TIMER_INT_CH1);
-
-        uint32_t ic_val = timer_channel_capture_value_register_read(TIMER8, TIMER_CH_1) + 1;
-        ppm_update(&ppm_decoder, ic_val);
-    }
-
-    /* leave interrupt */
-    rt_interrupt_leave();
-}
-
-void USART5_IRQHandler(void)
-{
-    uint8_t ch;
-    /* enter interrupt */
-    rt_interrupt_enter();
-
-    if ((usart_interrupt_flag_get(USART5, USART_INT_FLAG_RBNE) != RESET)) {
-        while (usart_flag_get(USART5, USART_FLAG_RBNE) != RESET) {
-            ch = (uint8_t)usart_data_receive(USART5);
-            sbus_input(&sbus_decoder, &ch, 1);
+    if(usart_flag_get(USART2, USART_RDBF_FLAG) != RESET) {
+        while (usart_flag_get(USART2, USART_RDBF_FLAG) != RESET)
+        {
+            ch = usart_data_receive(USART2) & 0xff;
+            crsf_input(&crsf_decoder,&ch);  
         }
 
-        /* if it's reading sbus data, we just parse it later */
-        if (!sbus_islock(&sbus_decoder)) {
-            sbus_update(&sbus_decoder);
+        if (!crsf_islock(&crsf_decoder)) {
+            crsf_update(&crsf_decoder);
+        }
+    }
+    else
+    {
+        if (usart_flag_get(instance->uart_x, USART_CTSCF_FLAG) != RESET) {
+            usart_flag_clear(instance->uart_x, USART_CTSCF_FLAG);
         }
 
-        /* Clear RXNE interrupt flag */
-        usart_flag_clear(USART5, USART_FLAG_RBNE);
+        if (usart_flag_get(instance->uart_x, USART_BFF_FLAG) != RESET) {
+            usart_flag_clear(instance->uart_x, USART_BFF_FLAG);
+        }
+
+        if (usart_flag_get(instance->uart_x, USART_TDC_FLAG) != RESET) {
+            usart_flag_clear(instance->uart_x, USART_TDC_FLAG);
+        }
     }
 
-    /* leave interrupt */
     rt_interrupt_leave();
 }
 
@@ -161,7 +195,7 @@ static rt_err_t sbus_lowlevel_init(void)
     /* config usart */
 
     /* 100000bps, even parity, two stop bits */
-    usart_baudrate_set(USART5, 100000);
+    usart_baudrate_set(USART5, 420000);
     usart_word_length_set(USART5, USART_WL_8BIT);
     usart_stop_bit_set(USART5, USART_STB_2BIT);
     usart_parity_config(USART5, USART_PM_EVEN);

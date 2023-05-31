@@ -84,132 +84,132 @@ static crsf_decoder_t crsf_decoder;
 //     rt_interrupt_leave();
 // }
 
-void USART2_IRQHandler(void) {
+// void USART2_IRQHandler(void) {
 
-    uint8_t ch ;
-    rt_interrupt_enter();
+//     uint8_t ch ;
+//     rt_interrupt_enter();
 
-    if(usart_flag_get(USART2, USART_RDBF_FLAG) != RESET) {
-        while (usart_flag_get(USART2, USART_RDBF_FLAG) != RESET)
-        {
-            ch = usart_data_receive(USART2) & 0xff;
-            crsf_input(&crsf_decoder,&ch);  
-        }
+//     if(usart_flag_get(USART2, USART_RDBF_FLAG) != RESET) {
+//         while (usart_flag_get(USART2, USART_RDBF_FLAG) != RESET)
+//         {
+//             ch = usart_data_receive(USART2) & 0xff;
+//             crsf_input(&crsf_decoder,&ch);  
+//         }
 
-        if (!crsf_islock(&crsf_decoder)) {
-            crsf_update(&crsf_decoder);
-        }
-    }
-    else
-    {
-        if (usart_flag_get(instance->uart_x, USART_CTSCF_FLAG) != RESET) {
-            usart_flag_clear(instance->uart_x, USART_CTSCF_FLAG);
-        }
+//         if (!crsf_islock(&crsf_decoder)) {
+//             crsf_update(&crsf_decoder);
+//         }
+//     }
+//     else
+//     {
+//         if (usart_flag_get(instance->uart_x, USART_CTSCF_FLAG) != RESET) {
+//             usart_flag_clear(instance->uart_x, USART_CTSCF_FLAG);
+//         }
 
-        if (usart_flag_get(instance->uart_x, USART_BFF_FLAG) != RESET) {
-            usart_flag_clear(instance->uart_x, USART_BFF_FLAG);
-        }
+//         if (usart_flag_get(instance->uart_x, USART_BFF_FLAG) != RESET) {
+//             usart_flag_clear(instance->uart_x, USART_BFF_FLAG);
+//         }
 
-        if (usart_flag_get(instance->uart_x, USART_TDC_FLAG) != RESET) {
-            usart_flag_clear(instance->uart_x, USART_TDC_FLAG);
-        }
-    }
+//         if (usart_flag_get(instance->uart_x, USART_TDC_FLAG) != RESET) {
+//             usart_flag_clear(instance->uart_x, USART_TDC_FLAG);
+//         }
+//     }
 
-    rt_interrupt_leave();
-}
+//     rt_interrupt_leave();
+// }
 
-static rt_err_t ppm_lowlevel_init(void)
-{
-    /* initialize gpio */
+// static rt_err_t ppm_lowlevel_init(void)
+// {
+//     /* initialize gpio */
 
-    rcu_periph_clock_enable(RCU_GPIOE);
+//     rcu_periph_clock_enable(RCU_GPIOE);
 
-    /*configure PE6 (TIMER8 CH1) as alternate function*/
-    gpio_mode_set(GPIOE, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
-    gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
+//     /*configure PE6 (TIMER8 CH1) as alternate function*/
+//     gpio_mode_set(GPIOE, GPIO_MODE_AF, GPIO_PUPD_NONE, GPIO_PIN_6);
+//     gpio_output_options_set(GPIOE, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_6);
 
-    gpio_af_set(GPIOE, GPIO_AF_3, GPIO_PIN_6);
+//     gpio_af_set(GPIOE, GPIO_AF_3, GPIO_PIN_6);
 
-    /* initialize isr */
-    nvic_irq_enable(TIMER0_BRK_TIMER8_IRQn, 1, 1);
+//     /* initialize isr */
+//     nvic_irq_enable(TIMER0_BRK_TIMER8_IRQn, 1, 1);
 
-    /* timer configuration for input capture */
+//     /* timer configuration for input capture */
 
-    timer_ic_parameter_struct timer_icinitpara;
-    timer_parameter_struct timer_initpara;
-    uint32_t APB1_2_PrescalerValue;
+//     timer_ic_parameter_struct timer_icinitpara;
+//     timer_parameter_struct timer_initpara;
+//     uint32_t APB1_2_PrescalerValue;
 
-    rcu_periph_clock_enable(RCU_TIMER8);
+//     rcu_periph_clock_enable(RCU_TIMER8);
 
-    /* When TIMERSEL is set, the TIMER clock is equal to CK_AHB(CK_TIMERx = CK_AHB). */
-    rcu_timer_clock_prescaler_config(RCU_TIMER_PSC_MUL4);
+//     /* When TIMERSEL is set, the TIMER clock is equal to CK_AHB(CK_TIMERx = CK_AHB). */
+//     rcu_timer_clock_prescaler_config(RCU_TIMER_PSC_MUL4);
 
-    /* APB1_2_PrescalerValue = SystemCoreClock / TARGET_TIMER_CLK */
-    APB1_2_PrescalerValue = SystemCoreClock / PPM_DECODER_FREQUENCY - 1;
+//     /* APB1_2_PrescalerValue = SystemCoreClock / TARGET_TIMER_CLK */
+//     APB1_2_PrescalerValue = SystemCoreClock / PPM_DECODER_FREQUENCY - 1;
 
-    timer_deinit(TIMER8);
-    /* TIMER2 configuration */
-    timer_initpara.prescaler = APB1_2_PrescalerValue;
-    timer_initpara.alignedmode = TIMER_COUNTER_EDGE;
-    timer_initpara.counterdirection = TIMER_COUNTER_UP;
-    timer_initpara.period = 65535;
-    timer_initpara.clockdivision = TIMER_CKDIV_DIV1;
-    timer_initpara.repetitioncounter = 0;
-    timer_init(TIMER8, &timer_initpara);
+//     timer_deinit(TIMER8);
+//     /* TIMER2 configuration */
+//     timer_initpara.prescaler = APB1_2_PrescalerValue;
+//     timer_initpara.alignedmode = TIMER_COUNTER_EDGE;
+//     timer_initpara.counterdirection = TIMER_COUNTER_UP;
+//     timer_initpara.period = 65535;
+//     timer_initpara.clockdivision = TIMER_CKDIV_DIV1;
+//     timer_initpara.repetitioncounter = 0;
+//     timer_init(TIMER8, &timer_initpara);
 
-    /* TIMER8  configuration */
-    /* TIMER8 CH1 input capture configuration */
-    timer_icinitpara.icpolarity = TIMER_IC_POLARITY_RISING;
-    timer_icinitpara.icselection = TIMER_IC_SELECTION_DIRECTTI;
-    timer_icinitpara.icprescaler = TIMER_IC_PSC_DIV1;
-    timer_icinitpara.icfilter = 0x0;
-    timer_input_capture_config(TIMER8, TIMER_CH_1, &timer_icinitpara);
+//     /* TIMER8  configuration */
+//     /* TIMER8 CH1 input capture configuration */
+//     timer_icinitpara.icpolarity = TIMER_IC_POLARITY_RISING;
+//     timer_icinitpara.icselection = TIMER_IC_SELECTION_DIRECTTI;
+//     timer_icinitpara.icprescaler = TIMER_IC_PSC_DIV1;
+//     timer_icinitpara.icfilter = 0x0;
+//     timer_input_capture_config(TIMER8, TIMER_CH_1, &timer_icinitpara);
 
-    /* auto-reload preload enable */
-    timer_auto_reload_shadow_enable(TIMER8);
-    /* clear channel 0 interrupt bit */
-    timer_interrupt_flag_clear(TIMER8, TIMER_INT_CH1);
-    /* channel 0 interrupt enable */
-    timer_interrupt_enable(TIMER8, TIMER_INT_CH1);
+//     /* auto-reload preload enable */
+//     timer_auto_reload_shadow_enable(TIMER8);
+//     /* clear channel 0 interrupt bit */
+//     timer_interrupt_flag_clear(TIMER8, TIMER_INT_CH1);
+//     /* channel 0 interrupt enable */
+//     timer_interrupt_enable(TIMER8, TIMER_INT_CH1);
 
-    /* TIMER8 counter enable */
-    timer_enable(TIMER8);
+//     /* TIMER8 counter enable */
+//     timer_enable(TIMER8);
 
-    return RT_EOK;
-}
+//     return RT_EOK;
+// }
 
-static rt_err_t sbus_lowlevel_init(void)
-{
-    /* initialize gpio */
+// static rt_err_t sbus_lowlevel_init(void)
+// {
+//     /* initialize gpio */
 
-    /* enable gpio clock */
-    rcu_periph_clock_enable(RCU_GPIOC);
-    rcu_periph_clock_enable(RCU_USART5);
+//     /* enable gpio clock */
+//     rcu_periph_clock_enable(RCU_GPIOC);
+//     rcu_periph_clock_enable(RCU_USART5);
 
-    /* connect port to USARTx_Rx */
-    gpio_af_set(GPIOC, GPIO_AF_8, GPIO_PIN_7);
-    /* configure USART Rx as alternate function push-pull */
-    gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_7);
-    gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_7);
+//     /* connect port to USARTx_Rx */
+//     gpio_af_set(GPIOC, GPIO_AF_8, GPIO_PIN_7);
+//     /* configure USART Rx as alternate function push-pull */
+//     gpio_mode_set(GPIOC, GPIO_MODE_AF, GPIO_PUPD_PULLUP, GPIO_PIN_7);
+//     gpio_output_options_set(GPIOC, GPIO_OTYPE_PP, GPIO_OSPEED_50MHZ, GPIO_PIN_7);
 
-    /* config usart */
+//     /* config usart */
 
-    /* 100000bps, even parity, two stop bits */
-    usart_baudrate_set(USART5, 420000);
-    usart_word_length_set(USART5, USART_WL_8BIT);
-    usart_stop_bit_set(USART5, USART_STB_2BIT);
-    usart_parity_config(USART5, USART_PM_EVEN);
-    usart_receive_config(USART5, USART_RECEIVE_ENABLE);
-    usart_transmit_config(USART5, USART_TRANSMIT_ENABLE); //TODO, need sbus output?
-    usart_enable(USART5);
+//     /* 100000bps, even parity, two stop bits */
+//     usart_baudrate_set(USART5, 420000);
+//     usart_word_length_set(USART5, USART_WL_8BIT);
+//     usart_stop_bit_set(USART5, USART_STB_2BIT);
+//     usart_parity_config(USART5, USART_PM_EVEN);
+//     usart_receive_config(USART5, USART_RECEIVE_ENABLE);
+//     usart_transmit_config(USART5, USART_TRANSMIT_ENABLE); //TODO, need sbus output?
+//     usart_enable(USART5);
 
-    /* initialize isr */
-    nvic_irq_enable(USART5_IRQn, 1, 1);
-    /* enable interrupt */
-    usart_interrupt_enable(USART5, USART_INT_RBNE);
+//     /* initialize isr */
+//     nvic_irq_enable(USART5_IRQn, 1, 1);
+//     /* enable interrupt */
+//     usart_interrupt_enable(USART5, USART_INT_RBNE);
 
-    return RT_EOK;
-}
+//     return RT_EOK;
+// }
 
 static rt_err_t crsf_lowlevel_init(void)
 {
@@ -243,7 +243,7 @@ static rt_err_t crsf_lowlevel_init(void)
     stop_bit = USART_STOP_1_BIT;
     parity_mode = USART_PARITY_NONE;
     usart_parity_selection_config(USART2, parity_mode);
-    usart_init(USART2, cfg->baud_rate, data_bit, stop_bit);
+    usart_init(USART2, 420000, data_bit, stop_bit);
     usart_enable(USART2, TRUE);
     return RT_EOK;
 }
@@ -311,7 +311,7 @@ static rt_uint16_t rc_read(rc_dev_t rc, rt_uint16_t chan_mask, rt_uint16_t* chan
 
         ppm_unlock(&ppm_decoder);
     }
-    else ifrc->config.protocol == RC_PROTOCOL_CRSF)
+    else if(rc->config.protocol == RC_PROTOCOL_CRSF)
     {
         if (crsf_data_ready(&crsf_decoder) == 0) {
             /* no data received, just return */
@@ -324,9 +324,9 @@ static rt_uint16_t rc_read(rc_dev_t rc, rt_uint16_t chan_mask, rt_uint16_t* chan
             *(index++) = crsf_decoder._channels[i];
             rb += 2;
         }
-        crsf_data_clear(&sbus_decoder);
+        crsf_data_clear(&crsf_decoder);
 
-        crsf_unlock(&sbus_decoder);
+        crsf_unlock(&crsf_decoder);
 
     }
 

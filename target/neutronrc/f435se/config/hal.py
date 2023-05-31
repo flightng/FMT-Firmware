@@ -16,7 +16,7 @@ HAL = [
     # 'fmtio_dev/*.c',
     # 'motor/*.c',
     'actuator/*.c',
-    # 'rc/*.c',
+    'rc/*.c',
     # 'gps/*.c',
     # 'adc/*.c',
     'mtd/*.c',

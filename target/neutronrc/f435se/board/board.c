@@ -37,7 +37,7 @@
 #include "drv_gpio.h"
 // #include "drv_soft_i2c.h"
 #include "drv_pwm.h"
-// #include "drv_rc.h"
+#include "drv_rc.h"
 // #include "drv_sdio.h"
 #include "drv_spi.h"
 #include "drv_systick.h"

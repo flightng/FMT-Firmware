@@ -52,12 +52,12 @@ void packetChannelsPacked(crsf_decoder_t* decoder)
     decoder->_channels[15] = ch->ch15;
 
     for (unsigned int i=0; i<CRSF_NUM_CHANNELS; ++i)
-        decoder->_channels[i] = map(_channels[i], CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, 1000, 2000);
+        decoder->_channels[i] = map(decoder->_channels[i], CRSF_CHANNEL_VALUE_1000, CRSF_CHANNEL_VALUE_2000, 1000, 2000);
 }
 
 void processPacketIn(crsf_decoder_t* decoder)
 {
-        const crsf_header_t *hdr = (crsf_header_t *)decoder._rxBuf;
+        const crsf_header_t *hdr = (crsf_header_t *)decoder->_rxBuf;
     if (hdr->device_addr == CRSF_ADDRESS_FLIGHT_CONTROLLER)
     {
         switch (hdr->type)
@@ -77,7 +77,7 @@ void processPacketIn(crsf_decoder_t* decoder)
 
 bool crsf_update(crsf_decoder_t* decoder)
 {
-    const crsf_header_t *hdr = (crsf_header_t *)decoder._rxBuf;
+    const crsf_header_t *hdr = (crsf_header_t *)decoder->_rxBuf;
     if(hdr->device_addr == CRSF_ADDRESS_FLIGHT_CONTROLLER)
     {
         uint8_t len = hdr->frame_size;

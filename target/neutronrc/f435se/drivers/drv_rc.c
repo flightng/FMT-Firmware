@@ -84,39 +84,39 @@ static crsf_decoder_t crsf_decoder;
 //     rt_interrupt_leave();
 // }
 
-// void USART2_IRQHandler(void) {
+void USART2_IRQHandler(void) {
 
-//     uint8_t ch ;
-//     rt_interrupt_enter();
+    uint8_t ch ;
+    rt_interrupt_enter();
 
-//     if(usart_flag_get(USART2, USART_RDBF_FLAG) != RESET) {
-//         while (usart_flag_get(USART2, USART_RDBF_FLAG) != RESET)
-//         {
-//             ch = usart_data_receive(USART2) & 0xff;
-//             crsf_input(&crsf_decoder,&ch);  
-//         }
+    if(usart_flag_get(USART2, USART_RDBF_FLAG) != RESET) {
+        while (usart_flag_get(USART2, USART_RDBF_FLAG) != RESET)
+        {
+            ch = usart_data_receive(USART2) & 0xff;
+            crsf_input(&crsf_decoder,&ch);  
+        
+            if (!crsf_islock(&crsf_decoder)) {
+                crsf_update(&crsf_decoder);
+            }
+        }
+    }
+    else
+    {
+        if (usart_flag_get(USART2, USART_CTSCF_FLAG) != RESET) {
+            usart_flag_clear(USART2, USART_CTSCF_FLAG);
+        }
 
-//         if (!crsf_islock(&crsf_decoder)) {
-//             crsf_update(&crsf_decoder);
-//         }
-//     }
-//     else
-//     {
-//         if (usart_flag_get(instance->uart_x, USART_CTSCF_FLAG) != RESET) {
-//             usart_flag_clear(instance->uart_x, USART_CTSCF_FLAG);
-//         }
+        if (usart_flag_get(USART2, USART_BFF_FLAG) != RESET) {
+            usart_flag_clear(USART2, USART_BFF_FLAG);
+        }
 
-//         if (usart_flag_get(instance->uart_x, USART_BFF_FLAG) != RESET) {
-//             usart_flag_clear(instance->uart_x, USART_BFF_FLAG);
-//         }
+        if (usart_flag_get(USART2, USART_TDC_FLAG) != RESET) {
+            usart_flag_clear(USART2, USART_TDC_FLAG);
+        }
+    }
 
-//         if (usart_flag_get(instance->uart_x, USART_TDC_FLAG) != RESET) {
-//             usart_flag_clear(instance->uart_x, USART_TDC_FLAG);
-//         }
-//     }
-
-//     rt_interrupt_leave();
-// }
+    rt_interrupt_leave();
+}
 
 // static rt_err_t ppm_lowlevel_init(void)
 // {
@@ -233,7 +233,8 @@ static rt_err_t crsf_lowlevel_init(void)
 
     nvic_irq_enable(USART2_IRQn, 1, 0);
     usart_interrupt_enable(USART2, USART_RDBF_INT, TRUE);
-    usart_transmitter_enable(USART2, TRUE);
+    //usart_transmitter_enable(USART2, TRUE);
+    usart_receiver_enable(USART2, TRUE);
     usart_hardware_flow_control_set(USART2, USART_HARDWARE_FLOW_NONE);
 
     usart_data_bit_num_type data_bit;

@@ -42,6 +42,14 @@ target = "NEUTF435SE"\n
 
 // clang-format on
 
+[pilot-cmd.device]\n
+    type = "rc"\n
+    name = "rc"\n
+    protocol = "crsf"\n       
+    channel-num = 8\n         
+    sample-time = 0.05\n      
+    range = [1000,2000]\n
+
 [actuator]\n
     [[actuator.devices]]\n
     protocol = "pwm"\n

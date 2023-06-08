@@ -75,40 +75,71 @@ void processPacketIn(crsf_decoder_t* decoder)
     } // CRSF_ADDRESS_FLIGHT_CONTROLLER
 }
 
-bool crsf_update(crsf_decoder_t* decoder)
+// Shift the bytes in the RxBuf down by cnt bytes
+void shiftRxBuffer(uint8_t cnt,crsf_decoder_t* decoder)
 {
-    const crsf_header_t *hdr = (crsf_header_t *)decoder->_rxBuf;
-    if(hdr->device_addr == CRSF_ADDRESS_FLIGHT_CONTROLLER)
-    {
-        uint8_t len = hdr->frame_size;
-        // Sanity check the declared length isn't outside Type + X{1,CRSF_MAX_PAYLOAD_LEN} + CRC
-        // assumes there never will be a CRSF message that just has a type and no data (X)
-        if (len < 3 || len > (CRSF_MAX_PAYLOAD_LEN + 2))
-        {
-            decoder->_rxBufPos = 0;
-        }
-        else
-        {
-            uint8_t inCrc = hdr->data[2 + len - 1];
-            uint8_t crc = calc(&(hdr->data[2]), len - 1);
-            if (crc == inCrc)
-            {
-                processPacketIn(decoder);
-                decoder->_rxBufPos = 0;
-                decoder->crsf_data_ready = true;
-            }
-        }
-    }
-    else
+    // If removing the whole thing, just set pos to 0
+    if (cnt >= decoder->_rxBufPos)
     {
         decoder->_rxBufPos = 0;
+        return;
     }
+
+    // if (cnt == 1 && onOobData)
+    //     onOobData(_rxBuf[0]);
+
+    // Otherwise do the slow shift down
+    uint8_t *src = &decoder->_rxBuf[cnt];
+    uint8_t *dst = &decoder->_rxBuf[0];
+    decoder->_rxBufPos -= cnt;
+    uint8_t left = decoder->_rxBufPos;
+    while (left--)
+        *dst++ = *src++;
+}
+
+bool crsf_update(crsf_decoder_t* decoder)
+{
+    bool reprocess;
+    do
+    {
+        reprocess = false;
+        if (decoder->_rxBufPos > 1)
+        {
+            uint8_t len = decoder->_rxBuf[1];
+            // Sanity check the declared length isn't outside Type + X{1,CRSF_MAX_PAYLOAD_LEN} + CRC
+            // assumes there never will be a CRSF message that just has a type and no data (X)
+            if (len < 3 || len > (CRSF_MAX_PAYLOAD_LEN + 2))
+            {
+                shiftRxBuffer(1,decoder);
+                reprocess = true;
+            }
+
+            else if (decoder->_rxBufPos >= (len + 2))
+            {
+                uint8_t inCrc = decoder->_rxBuf[2 + len - 1];
+                uint8_t crc = calc(&decoder->_rxBuf[2], len - 1);
+                if (crc == inCrc)
+                {
+                    processPacketIn(decoder);
+                    shiftRxBuffer(len + 2,decoder);
+                    reprocess = true;
+                    decoder->crsf_data_ready = true;
+                    decoder->rc_count = 16;
+                }
+                else
+                {
+                    shiftRxBuffer(1,decoder);
+                    reprocess = true;
+                }
+            }  // if complete packet
+        } // if pos > 1
+    } while (reprocess);
 }
 
 void crsf_input(crsf_decoder_t* decoder, const uint8_t* values)
 {
     decoder->_rxBuf[decoder->_rxBufPos++] = *values;
-    if (decoder->_rxBufPos == (sizeof(decoder->_rxBuf)/sizeof(decoder->_rxBuf[0])))
+    if (decoder->_rxBufPos == (CRSF_MAX_PACKET_SIZE))
     {
         decoder->_rxBufPos = 0;
     }

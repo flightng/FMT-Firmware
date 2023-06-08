@@ -297,14 +297,14 @@ fmt_err_t pilot_cmd_collect(void)
             /* publish rc_trim_channel topic */
             mcn_publish(MCN_HUB(rc_trim_channels), rcTrimChannel);
 
-            /* stick value mapping */
-            stick_mapping(&pilot_cmd_bus, rcTrimChannel);
-            /* pilot mode switch */
-            mode_switch(&pilot_cmd_bus, rcTrimChannel);
-            /* generate pilot command */
-            generate_cmd(&pilot_cmd_bus, rcTrimChannel);
-            /* publish pilot_cmd topic */
-            mcn_publish(MCN_HUB(pilot_cmd), &pilot_cmd_bus);
+            // /* stick value mapping */
+            // stick_mapping(&pilot_cmd_bus, rcTrimChannel);
+            // /* pilot mode switch */
+            // mode_switch(&pilot_cmd_bus, rcTrimChannel);
+            // /* generate pilot command */
+            // generate_cmd(&pilot_cmd_bus, rcTrimChannel);
+            // /* publish pilot_cmd topic */
+            // mcn_publish(MCN_HUB(pilot_cmd), &pilot_cmd_bus);
 
 #ifdef FMT_OUTPUT_PILOT_CMD
             /* send out pilot_cmd via mavlink */

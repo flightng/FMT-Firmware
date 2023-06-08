@@ -123,7 +123,7 @@ static rt_err_t hal_rc_control(struct rt_device* dev, int cmd, void* args)
             }
 
             *(uint8_t*)args = updated;
-        } else if (rc->config.protocol == RC_PROTOCOL_SBUS || rc->config.protocol == RC_PROTOCOL_PPM) {
+        } else if (rc->config.protocol == RC_PROTOCOL_SBUS || rc->config.protocol == RC_PROTOCOL_PPM||rc->config.protocol == RC_PROTOCOL_CRSF) {
             return rc->ops->rc_control(rc, cmd, args);
         } else {
             *(uint8_t*)args = 0;

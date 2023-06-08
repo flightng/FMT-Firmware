@@ -470,7 +470,10 @@ static fmt_err_t pilot_cmd_parse_device(const toml_table_t* curtab)
                     config->protocol = RC_PROTOCOL_SBUS;
                 } else if (MATCH(strval, "ppm")) {
                     config->protocol = RC_PROTOCOL_PPM;
-                } else {
+                } else if (MATCH(strval, "crsf"))
+                {
+                    config->protocol = RC_PROTOCOL_CRSF;
+                }else{
                     TOML_DBG_W("unknown rc protocol:%s\n", strval);
                     rt_free(strval);
                 }

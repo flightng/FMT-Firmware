@@ -42,13 +42,17 @@ target = "NEUTF435SE"\n
 
 // clang-format on
 
+[pilot-cmd]\n
+    // channel mapping for [yaw, throttle, roll, pitch]
+    stick-channel = [4,3,1,2]\n
+
 [pilot-cmd.device]\n
     type = "rc"\n
     name = "rc"\n
     protocol = "crsf"\n       
     channel-num = 8\n         
     sample-time = 0.05\n      
-    range = [1000,2000]\n
+    range = [1000,2000]\ns
 
 [actuator]\n
     [[actuator.devices]]\n

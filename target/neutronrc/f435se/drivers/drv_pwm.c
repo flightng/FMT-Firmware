@@ -118,13 +118,13 @@ rt_inline void __write_pwm(uint8_t chan_id, float dc)
 {
     switch (chan_id) {
     case 0:
-        tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_1, PWM_ARR(__pwm_freq) * dc - 1);
+        tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_3, PWM_ARR(__pwm_freq) * dc - 1);
         break;
     case 1:
         tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_2, PWM_ARR(__pwm_freq) * dc - 1);
         break;
     case 2:
-        tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_3, PWM_ARR(__pwm_freq) * dc - 1);
+        tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_1, PWM_ARR(__pwm_freq) * dc - 1);
         break;
     case 3:
         tmr_channel_value_set(TMR4, TMR_SELECT_CHANNEL_4, PWM_ARR(__pwm_freq) * dc - 1);

@@ -49,15 +49,31 @@ target = "NEUTF435SE"\n
     sample-time = 0.05\n      
     range = [1000,2000]\n
 
+    [[pilot-cmd.mode]]\n
+    mode = 3\n                   // Stabilize mode
+    channel = 5\n
+    range = [1800,2000]\n
+
+    [[pilot-cmd.command]]\n
+    type = 1\n                    //# 1:event | 2:status
+    cmd = 1002\n                  //FMS_Cmd_Disarm
+    channel = 8\n
+    range = [1800,2000]\n
+
 [actuator]\n
     [[actuator.devices]]\n
     protocol = "pwm"\n
     name = "main_out"\n
     freq = 400\n
 	
+    [[actuator.mappings]]\n
+    from = "control_out"\n
+    to = "main_out"\n
+    chan-map = [[1,2,3,4],[1,2,3,4]]\n
+
     // [[actuator.mappings]]\n
-    // from = "control_out"\n
+    // from = "rc_channels"\n
     // to = "main_out"\n
-    // chan-map = [[1,2,3,4],[1,2,3,4]]\n
+    // chan-map = [[3,3,3,3],[1,2,3,4]]\n
 
 );

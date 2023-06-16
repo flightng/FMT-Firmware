@@ -4,8 +4,6 @@ import os
 from building import *
 		
 objs = SConscript('AT32F435_437_Firmware_Library/SConscript')
-objs+= SConscript('usbd_library/SConscript')
-objs+= SConscript('usbfs_library/SConscript')
-
+objs+= SConscript('at32_usb_lib/SConscript')
 
 Return('objs')

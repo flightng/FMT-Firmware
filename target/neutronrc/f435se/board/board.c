@@ -42,7 +42,7 @@
 #include "drv_spi.h"
 #include "drv_systick.h"
 #include "drv_usart_v3.h"
-// #include "drv_usbd_cdc.h"
+#include "drv_usbd_cdc.h"
 #include "led.h"
 #include "model/control/control_interface.h"
 #include "model/fms/fms_interface.h"
@@ -387,7 +387,7 @@ void bsp_initialize(void)
     FMT_CHECK(param_init());
 
     // /* init usbd_cdc */
-    // RT_CHECK(drv_usb_cdc_init());
+    RT_CHECK(drv_usb_cdc_init());
 
     // /* adc driver init */
     // RT_CHECK(drv_adc_init());
@@ -438,7 +438,7 @@ void bsp_initialize(void)
 void bsp_post_initialize(void)
 {
     /* toml system configure */
-    __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
+    //__toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
     if (!__toml_root_tab) {
         /* use default system configuration */
         __toml_root_tab = toml_parse_config_string(default_conf);

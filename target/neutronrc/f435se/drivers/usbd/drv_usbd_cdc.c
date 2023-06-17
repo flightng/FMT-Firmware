@@ -22,7 +22,7 @@
 // #include "cdc_acm_core.h"
 // #include "drv_usbd_int.h"
 
-// #include "at32f435_437_board.h"
+//#include "at32f435_437_board.h"
 // #include "at32f435_437_clock.h"
 #include "usb_conf.h"
 #include "usb_core.h"
@@ -34,6 +34,9 @@ static struct usbd_cdc_dev usbd_dev;
 /* usb global struct define */
 otg_core_type otg_core_struct;
 uint32_t rx_data[512];
+
+void cdc_transmit_complete(usbh_core_type *uhost);
+void cdc_receive_complete(usbh_core_type *uhost);
 
 /**
   * @brief  this function handles otgfs interrupt.
@@ -108,7 +111,7 @@ void cdc_receive_complete(usbh_core_type *uhost)
     /* usbd is not initialized */
     return;
     }
-    (void)ringbuffer_put(usbd_dev.rx_rb, rx_data, uhost->hch[pcdc->data_interface.in_channel].trans_count);
+    (void)ringbuffer_put(usbd_dev.rx_rb, (const uint8_t*)rx_data, uhost->hch[pcdc->data_interface.in_channel].trans_count);
     hal_usbd_cdc_notify_status(&usbd_dev, USBD_STATUS_RX);
     cdc_start_reception(&otg_core_struct.host, (uint8_t *)rx_data, 64);
 }

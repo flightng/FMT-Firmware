@@ -33,8 +33,8 @@ target = "NEUTF435SE"\n
 	auto-switch = true\n
 [mavproxy]\n
 	[[mavproxy.devices]]\n
-	type = "serial"\n
-	name = "serial0"\n
+	type = "usb"\n
+	name = "usbd0"\n
 	baudrate = 57600\n
 
 [pilot-cmd]\n

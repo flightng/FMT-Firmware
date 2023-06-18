@@ -24,6 +24,11 @@ extern "C" {
 
 rt_err_t drv_usb_cdc_init(void);
 
+void cdc_transmit_complete(void);
+void cdc_receive_complete(void);
+void drv_usbd_cdc_disconnect_cb(void);
+void drv_usbd_cdc_connect_cb(void);
+
 #ifdef __cplusplus
 }
 #endif

@@ -1,7 +1,7 @@
 /**
   **************************************************************************
-  * @file     usbh_int.h
-  * @brief    usb header file
+  * @file     at32f435_437_clock.h
+  * @brief    header file of clock program
   **************************************************************************
   *                       Copyright notice & Disclaimer
   *
@@ -23,49 +23,18 @@
   */
 
 /* define to prevent recursive inclusion -------------------------------------*/
-#ifndef __USBH_INT_H
-#define __USBH_INT_H
+#ifndef __AT32F435_437_CLOCK_H
+#define __AT32F435_437_CLOCK_H
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-/** @addtogroup AT32F435_437_middlewares_usbh_drivers
-  * @{
-  */
-
-/** @addtogroup USBH_drivers_int
-  * @{
-  */
-
-/** @defgroup USBH_interrupt_exported_types
-  * @{
-  */
-
 /* includes ------------------------------------------------------------------*/
-#include "usbh_core.h"
-#include "usb_core.h"
-void usbh_irq_handler(otg_core_type *hdev);
-void usbh_hch_handler(usbh_core_type *uhost);
-void usbh_port_handler(usbh_core_type *uhost);
-void usbh_disconnect_handler(usbh_core_type *uhost);
-void usbh_hch_in_handler(usbh_core_type *uhost, uint8_t chn);
-void usbh_hch_out_handler(usbh_core_type *uhost, uint8_t chn);
-void usbh_rx_qlvl_handler(usbh_core_type *uhost);
-void usbh_wakeup_handler(usbh_core_type *uhost);
-void usbh_sof_handler(usbh_core_type *uhost);
+#include "at32f435_437.h"
 
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+/* exported functions ------------------------------------------------------- */
+void system_clock_config(void);
 
 #ifdef __cplusplus
 }

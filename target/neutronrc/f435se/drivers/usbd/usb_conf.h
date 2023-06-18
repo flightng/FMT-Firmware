@@ -33,23 +33,15 @@ extern "C" {
 #include "at32f435_437.h"
 #include "stdio.h"
 
-/** @addtogroup AT32F437_periph_examples
-  * @{
-  */
-
-/** @addtogroup 437_USB_host_cdc
-  * @{
-  */
-
 /**
   * @brief enable usb device mode
   */
-/* #define USE_OTG_DEVICE_MODE */
+#define USE_OTG_DEVICE_MODE
 
 /**
   * @brief enable usb host mode
   */
-#define USE_OTG_HOST_MODE
+/* #define USE_OTG_HOST_MODE */
 
 /**
   * @brief select otgfs1 or otgfs2 define
@@ -59,7 +51,7 @@ extern "C" {
 #define OTG_USB_ID                           1
 
 /* use otgfs2 */
-/* #define OTG_USB_ID                         2 */
+//#define OTG_USB_ID                         2
 
 #if (OTG_USB_ID == 1)
 #define USB_ID                           0
@@ -91,10 +83,6 @@ extern "C" {
 #define OTG_PIN_SOF_SOURCE               GPIO_PINS_SOURCE8
 
 #define OTG_PIN_MUX                      GPIO_MUX_10
-
-#define OTG_PIN_POWER_SWITCH_GPIO        GPIOH
-#define OTG_PIN_POWER_SWITCH_CLOCK       CRM_GPIOH_PERIPH_CLOCK
-#define OTG_PIN_POWER_SWITCH             GPIO_PINS_3
 #endif
 
 #if (OTG_USB_ID == 2)
@@ -119,7 +107,7 @@ extern "C" {
 #define OTG_PIN_VBUS_SOURCE              GPIO_PINS_SOURCE13
 
 #define OTG_PIN_ID                       GPIO_PINS_12
-#define OTG_PIN_ID_SOURCE                GPIO_PINS_SOURCE12
+#define OTG_PIN_ID_SOURCE                GPIO_PINS_SOURCE10
 
 #define OTG_PIN_SOF_GPIO                 GPIOA
 #define OTG_PIN_SOF_GPIO_CLOCK           CRM_GPIOA_PERIPH_CLOCK
@@ -127,10 +115,6 @@ extern "C" {
 #define OTG_PIN_SOF_SOURCE               GPIO_PINS_SOURCE4
 
 #define OTG_PIN_MUX                      GPIO_MUX_12
-
-#define OTG_PIN_POWER_SWITCH_GPIO        GPIOB
-#define OTG_PIN_POWER_SWITCH_CLOCK       CRM_GPIOB_PERIPH_CLOCK
-#define OTG_PIN_POWER_SWITCH             GPIO_PINS_10
 #endif
 
 /**
@@ -190,9 +174,6 @@ extern "C" {
 #define USBH2_RX_FIFO_SIZE               128
 #define USBH2_NP_TX_FIFO_SIZE            96
 #define USBH2_P_TX_FIFO_SIZE             96
-
-/* usb host vbus power switch */
-#define USBH_5V_POWER_SWITCH
 #endif
 
 /**
@@ -201,7 +182,7 @@ extern "C" {
 /* #define USB_SOF_OUTPUT_ENABLE */
 
 /**
-  * @brief usb vbus ignore
+  * @brief usb vbus ignore, not use vbus pin
   */
 #define USB_VBUS_IGNORE
 
@@ -210,28 +191,12 @@ extern "C" {
   */
 /* #define USB_LOW_POWER_WAKUP */
 
-#define USBH_DEBUG_ENABLE
-
-#ifdef USBH_DEBUG_ENABLE
-#define USBH_DEBUG(...) printf(__VA_ARGS__);\
-                        printf("\r\n");
-#else
-#define USBH_DEBUG(...)
-#endif
-
 void usb_delay_ms(uint32_t ms);
 void usb_delay_us(uint32_t us);
 
-/**
-  * @}
-  */
 
-/**
-  * @}
-  */
 #ifdef __cplusplus
 }
 #endif
 
 #endif
-

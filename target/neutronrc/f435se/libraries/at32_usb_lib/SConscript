@@ -6,13 +6,13 @@ cwd = GetCurrentDir()
 
 # The set of source files associated with this SConscript file.
 src = []
+src += Glob('usb_bsp/*.c')
 src += Glob('usb_drivers/src/*.c')
-src += Glob('usbd_class/cdc/*.c')
-src += Glob('usbh_class/usbh_cdc/*.c')
+src += Glob('usbd_class/*.c')
 
-path = [cwd + '/usb_drivers/inc', 
-    cwd + '/usbd_class/cdc',
-    cwd + '/usbh_class/usbh_cdc']
+path = [cwd + '/usb_bsp', 
+    cwd + '/usb_drivers/inc',
+    cwd + '/usbd_class']
 
 group = DefineGroup('AT32_USB_Library', src, depend = [''], CPPPATH = path, CPPDEFINES=['USE_USB_FS'])
 

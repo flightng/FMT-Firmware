@@ -438,7 +438,7 @@ void bsp_initialize(void)
 void bsp_post_initialize(void)
 {
     /* toml system configure */
-    //__toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
+    __toml_root_tab = toml_parse_config_file(SYS_CONFIG_FILE);
     if (!__toml_root_tab) {
         /* use default system configuration */
         __toml_root_tab = toml_parse_config_string(default_conf);
@@ -475,7 +475,7 @@ void bsp_post_initialize(void)
     bsp_show_information();
 
     /* dump boot log to file */
-    //boot_log_dump();
+    boot_log_dump();
 }
 
 /**

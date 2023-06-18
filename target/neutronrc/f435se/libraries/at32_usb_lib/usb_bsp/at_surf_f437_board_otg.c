@@ -53,7 +53,7 @@ void otg_init(void)
   usb_clock48m_select(USB_CLK_HEXT);
 
   /* enable otgfs irq */
-  nvic_irq_enable(OTG_IRQ, 1, 0);
+  nvic_irq_enable(OTG_IRQ, 0, 0);
 
   /* init usb */
   usbd_init(&otg_core_struct,

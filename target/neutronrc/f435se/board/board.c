@@ -331,6 +331,9 @@ void bsp_early_initialize(void)
     rt_system_heap_init((void*)SYSTEM_FREE_MEM_BEGIN, (void*)SYSTEM_FREE_MEM_END);
 
     system_clock_config();
+
+    nvic_priority_group_config(NVIC_PRIORITY_GROUP_4);
+
     /* usart driver init */
     RT_CHECK(drv_usart_init());
 

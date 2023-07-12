@@ -1167,7 +1167,7 @@ static rt_err_t at32_control(struct serial_device *serial, int cmd, void *arg) {
 #endif
         break;
     case RT_DEVICE_CTRL_SET_INT:
-        nvic_irq_enable(instance->irqn, 1, 0);
+        nvic_irq_enable(instance->irqn, 2, 0);
         usart_interrupt_enable(instance->uart_x, USART_RDBF_INT, TRUE);
         break;
 #ifdef RT_SERIAL_USING_DMA

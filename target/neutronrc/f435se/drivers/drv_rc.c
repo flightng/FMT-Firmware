@@ -231,7 +231,7 @@ static rt_err_t crsf_lowlevel_init(void)
     gpio_pin_mux_config(GPIOA,GPIO_PINS_SOURCE2, GPIO_MUX_7);
     gpio_pin_mux_config(GPIOA,GPIO_PINS_SOURCE3, GPIO_MUX_7);
 
-    nvic_irq_enable(USART2_IRQn, 1, 0);
+    nvic_irq_enable(USART2_IRQn, 2, 0);
     usart_interrupt_enable(USART2, USART_RDBF_INT, TRUE);
     //usart_transmitter_enable(USART2, TRUE);
     usart_receiver_enable(USART2, TRUE);

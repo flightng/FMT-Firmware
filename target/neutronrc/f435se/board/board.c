@@ -384,7 +384,13 @@ void bsp_initialize(void)
     // RT_CHECK(drv_sdio_init());
     RT_CHECK(drv_w25qxx_init("spi3_dev0", "mtdblk0"));
     // /* init file system */
-    FMT_CHECK(file_manager_init(mnt_table));
+    // FMT_CHECK(file_manager_init(mnt_table));
+    if(file_manager_init(mnt_table)!=FMT_EOK){
+        //maybe no fs on flash ,try to mkfs
+        FMT_CHECK(dfs_mkfs("elm","mtdblk0"));
+        //then init again
+        FMT_CHECK(file_manager_init(mnt_table));
+    }
 
     // /* init parameter system */
     FMT_CHECK(param_init());

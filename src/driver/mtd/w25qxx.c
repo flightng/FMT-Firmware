@@ -345,7 +345,7 @@ rt_err_t drv_w25qxx_init(const char* spi_device_name, const char* mtd_device_nam
         struct rt_spi_configuration cfg;
         cfg.data_width = 8;
         cfg.mode = RT_SPI_MODE_3 | RT_SPI_MSB; /* SPI Compatible Modes 3 */
-        cfg.max_hz = 7000000;
+        cfg.max_hz = 36000000;
 
         struct rt_spi_device* spi_device_t = (struct rt_spi_device*)mtd_spi_dev;
         spi_device_t->config.data_width = cfg.data_width;

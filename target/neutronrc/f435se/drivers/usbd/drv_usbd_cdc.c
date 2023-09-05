@@ -53,17 +53,11 @@ static rt_size_t usbd_cdc_read(usbd_cdc_dev_t usbd, rt_off_t pos, void* buf, rt_
 
 static rt_size_t usbd_cdc_write(usbd_cdc_dev_t usbd, rt_off_t pos, const void* buf, rt_size_t size)
 {
-  uint32_t timeout;
-  timeout = 5000000;
-  do
-  {
-    /* send data to host */
-    if(usb_vcp_send_data(&otg_core_struct.dev, buf, size) == SUCCESS)
+  if(usb_vcp_send_data(&otg_core_struct.dev,(uint8_t *) buf, size) != SUCCESS)
     {
-      return size;  
+      return 0;  
     }
-  }while(timeout --);
-  return 0;
+  return size;
 }
 
 void drv_usbd_cdc_disconnect_cb(void)

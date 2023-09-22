@@ -563,14 +563,14 @@ void ulog_voutput(rt_uint32_t level, const char* tag, rt_bool_t newline, const c
  */
 void ulog_output(rt_uint32_t level, const char* tag, rt_bool_t newline, const char* format, ...)
 {
-    va_list args;
+    //va_list args;
 
-    /* args point to the first variable parameter */
-    va_start(args, format);
+    // /* args point to the first variable parameter */
+    // va_start(args, format);
 
-    ulog_voutput(level, tag, newline, format, args);
+    // ulog_voutput(level, tag, newline, format, args);
 
-    va_end(args);
+    // va_end(args);
 }
 
 /**

@@ -94,6 +94,7 @@
             //"armToolchainPath": "${env:AT32_GCC_PATH}",
             //"serialNumber": "", //If you have more than one J-Link probe, add the serial number here.
             //"svdFile": "target/pixhawk/fmu-v2/STM32F427.svd",
+            "armToolchainPath": "${env:RTT_EXEC_PATH}",
             "svdFile": "target/neutronrc/f435se/AT32F435xx_v2.svd",
             "runToMain": true
         }

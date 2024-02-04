@@ -284,6 +284,25 @@ rt_inline rt_err_t spi_write_reg8(rt_device_t spi_device, uint8_t reg, uint8_t v
     return (w_byte == 2) ? RT_EOK : RT_ERROR;
 }
 
+rt_inline rt_err_t spi_write_multi_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer, uint8_t len)
+{
+    uint8_t* w_buffer;
+    rt_size_t w_byte;
+
+    w_buffer = rt_malloc(len + 1);
+    if (w_buffer == RT_NULL)
+        return -RT_ENOMEM;
+
+    w_buffer[0] = SPI_DIR_WRITE | reg;
+    rt_memcpy(&w_buffer[1], buffer, len);
+
+    w_byte = rt_spi_transfer((struct rt_spi_device*)spi_device, w_buffer, NULL, len + 1);
+
+    rt_free(w_buffer);
+
+    return (w_byte == len + 1) ? RT_EOK : RT_ERROR;
+}
+
 rt_inline rt_err_t spi_read_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer)
 {
     uint8_t reg_addr;
@@ -293,7 +312,7 @@ rt_inline rt_err_t spi_read_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* b
     return rt_spi_send_then_recv((struct rt_spi_device*)spi_device, (void*)&reg_addr, 1, (void*)buffer, 1);
 }
 
-rt_inline rt_err_t spi_read_multi_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer, uint8_t len)
+rt_inline rt_err_t spi_read_multi_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer, size_t len)
 {
     uint8_t reg_addr;
 

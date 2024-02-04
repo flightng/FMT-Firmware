@@ -26,8 +26,9 @@
 // #include "driver/barometer/spl06.h"
 // #include "driver/gps/gps_m8n.h"
 // #include "driver/imu/bmi088.h"
+#include "driver/imu/bmi270.h"
 // #include "driver/imu/icm20948.h"
-#include "driver/imu/icm42688p.h"
+// #include "driver/imu/icm42688p.h"
 // #include "driver/mag/bmm150.h"
 #include "driver/mtd/w25qxx.h"
 // #include "driver/rgb_led/aw2023.h"
@@ -412,7 +413,8 @@ void bsp_initialize(void)
 #else
     /* init onboard sensors */
     // RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
-    RT_CHECK(drv_icm42688_init("spi1_dev0", "gyro0", "accel0", 0));
+    RT_CHECK(drv_bmi270_init("spi1_dev0", "gyro0", "accel0"));
+    // RT_CHECK(drv_icm42688_init("spi1_dev0", "gyro0", "accel0", 0));
     // RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
     // RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
 

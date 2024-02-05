@@ -24,6 +24,9 @@
         "editor.defaultFormatter": "vscode.json-language-features"
     },
     "openocd.host":"127.0.0.1",
-    "openocd.path": "/home/emsr/Developer/mcu/toolchain/openocd/bin/openocd",
+    "openocd.path": "C:/Tools/OpenOCD_V2.0.2/bin/openocd.exe",
     "cortex-debug.variableUseNaturalFormat": true,
+    "[c]": {
+        "editor.defaultFormatter": "ms-vscode.cpptools"
+    },
 }

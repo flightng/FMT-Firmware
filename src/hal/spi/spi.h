@@ -284,7 +284,7 @@ rt_inline rt_err_t spi_write_reg8(rt_device_t spi_device, uint8_t reg, uint8_t v
     return (w_byte == 2) ? RT_EOK : RT_ERROR;
 }
 
-rt_inline rt_err_t spi_write_multi_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer, uint8_t len)
+rt_inline rt_err_t spi_write_multi_reg8(rt_device_t spi_device, uint8_t reg, uint8_t* buffer, uint32_t len)
 {
     uint8_t* w_buffer;
     rt_size_t w_byte;

@@ -867,6 +867,10 @@ static rt_err_t imu_init(void)
     RT_TRY(bmi270_write_bits_reg16(imu_spi_dev, BMI270_REG_FEATURES_1_G_TRIG_1, BMI270_MASK_G_TRIG_1_SELECT, BMI270_VAL_FEATURES_1_G_TRIG_1_SELECT_CRT));
     rt_thread_mdelay(10);
 
+    /* CRT: set G_TRIG_1.block=0 */
+    RT_TRY(bmi270_write_bits_reg16(imu_spi_dev, BMI270_REG_FEATURES_1_G_TRIG_1, BMI270_MASK_G_TRIG_1_BLOCK, BMI270_VAL_FEATURES_1_G_TRIG_1_BLOCK_UNLOCK));
+    rt_thread_mdelay(10);
+
     /* CRT: send g_trigger command to CMD reg */
     RT_TRY(bmi270_write_reg8(imu_spi_dev, BMI270_REG_CMD, BMI270_VAL_CMD_G_TRIGGER));
     rt_thread_mdelay(5000);

@@ -829,7 +829,11 @@ static rt_err_t imu_init(void)
 
     /* soft reset */
     RT_TRY(bmi270_write_reg8(imu_spi_dev, BMI270_REG_CMD, BMI270_VAL_CMD_SOFTRESET));
-    rt_thread_mdelay(100);
+    rt_thread_mdelay(10);
+
+    /* get the chip works in SPI mode */
+    RT_TRY(bmi270_write_reg8(imu_spi_dev, BMI270_REG_NV_CONF, 1));
+    rt_thread_mdelay(1);
 
     RT_TRY(bmi270_write_reg8(imu_spi_dev, BMI270_REG_PWR_CONF, 0));
     rt_thread_mdelay(1);
@@ -841,6 +845,10 @@ static rt_err_t imu_init(void)
     rt_thread_mdelay(10);
 
     RT_TRY(bmi270_write_reg8(imu_spi_dev, BMI270_REG_INIT_CTRL, 1));
+    rt_thread_mdelay(1);
+
+    uint8_t message =0;
+    RT_TRY(bmi270_read_reg8(imu_spi_dev, BMI270_REG_INTERNAL_STATUS, &message));
     rt_thread_mdelay(1);
 
     /* CRT: disable advance power save mode */

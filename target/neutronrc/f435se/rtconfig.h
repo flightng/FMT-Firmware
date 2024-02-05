@@ -78,7 +78,7 @@
 /* Using msh style shell */
 #define FINSH_USING_MSH
 #define FINSH_USING_MSH_ONLY
-#define DFS_USING_WORKDIR
+// #define DFS_USING_WORKDIR
 #define FINSH_THREAD_STACK_SIZE 4096
 /* Enable finsh history */
 #define FINSH_USING_HISTORY

@@ -394,7 +394,7 @@ void bsp_initialize(void)
     // }
 
     // /* init parameter system */
-    //FMT_CHECK(param_init());
+    FMT_CHECK(param_init());
 
     // /* init usbd_cdc */
     RT_CHECK(drv_usb_cdc_init());
@@ -486,7 +486,7 @@ void bsp_post_initialize(void)
     bsp_show_information();
 
     /* dump boot log to file */
-    boot_log_dump();
+    //boot_log_dump();
 }
 
 /**

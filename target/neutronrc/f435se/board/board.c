@@ -26,7 +26,7 @@
 // #include "driver/barometer/spl06.h"
 // #include "driver/gps/gps_m8n.h"
 // #include "driver/imu/bmi088.h"
-// #include "driver/imu/bmi270.h"
+#include "driver/imu/bmi270.h"
 // #include "driver/imu/icm20948.h"
 #include "driver/imu/icm42688p.h"
 // #include "driver/mag/bmm150.h"
@@ -78,8 +78,8 @@
 #define SYS_CONFIG_FILE "/sys/sysconfig.toml"
 
 static const struct dfs_mount_tbl mnt_table[] = {
-//    { "sd0", "/", "elm", 0, NULL },
-    { "mtdblk0", "/", "elm", 0, NULL },
+    { "sd0", "/", "elm", 0, NULL },
+//    { "mtdblk0", "/", "elm", 0, NULL },
     { NULL } /* NULL indicate the end */
 };
 
@@ -383,16 +383,16 @@ void bsp_initialize(void)
     FMT_CHECK(workqueue_manager_init());
 
     // /* init storage devices */
-    RT_CHECK(drv_sd_init("spi1_dev0"));
+    RT_CHECK(drv_sd_init("spi3_dev0"));
     // RT_CHECK(drv_w25qxx_init("spi3_dev0", "mtdblk0"));
-    // /* init file system */
-    // FMT_CHECK(file_manager_init(mnt_table));
-    // if(file_manager_init(mnt_table)!=FMT_EOK){
-    //     //maybe no fs on flash ,try to mkfs
-    //     FMT_CHECK(dfs_mkfs("elm","mtdblk0"));
-    //     //then init again
-    //     FMT_CHECK(file_manager_init(mnt_table));
-    // }
+    /* init file system */
+    FMT_CHECK(file_manager_init(mnt_table));
+    if(file_manager_init(mnt_table)!=FMT_EOK){
+        //maybe no fs on flash ,try to mkfs
+        FMT_CHECK(dfs_mkfs("elm","mtdblk0"));
+        //then init again
+        FMT_CHECK(file_manager_init(mnt_table));
+    }
 
     // /* init parameter system */
     FMT_CHECK(param_init());
@@ -414,8 +414,8 @@ void bsp_initialize(void)
 #else
     /* init onboard sensors */
     // RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
-    // RT_CHECK(drv_bmi270_init("spi_dev0", "gyro0", "accel0"));
-    RT_CHECK(drv_icm42688_init("spi3_dev0", "gyro0", "accel0", 0));
+    RT_CHECK(drv_bmi270_init("spi1_dev0", "gyro0", "accel0"));
+    // RT_CHECK(drv_icm42688_init("spi3_dev0", "gyro0", "accel0", 0));
     // RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
     // RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
 

@@ -181,7 +181,6 @@ typedef struct
 } SD_CardInfo;
 
 
-extern SD_CardInfo SDCardInfo;	//用于存储卡的信息
 
 /**
   * @}
@@ -278,7 +277,7 @@ extern SD_CardInfo SDCardInfo;	//用于存储卡的信息
   * @{
   */ 
 void SD_DeInit(void);  
-SD_Error SD_Init(void);
+SD_Error SD_Init(SD_CardInfo *SDCardInfo);
 uint8_t SD_Detect(void);
 SD_Error SD_GetCardInfo(SD_CardInfo *cardinfo);
 SD_Error SD_GetCardType(void);

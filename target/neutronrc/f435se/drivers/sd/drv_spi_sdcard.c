@@ -48,7 +48,6 @@
 #include "hal/spi/spi.h"
 //记录卡的类型
 uint8_t  SD_Type = SD_TYPE_NOT_SD;	//存储卡的类型
-SD_CardInfo SDCardInfo;	//用于存储卡的信息
 static rt_device_t spi_dev;
 
 void spi_WriteByte_sd(rt_device_t device, uint8_t data) {
@@ -110,7 +109,7 @@ uint8_t spi_ReadByte_sd(rt_device_t device) {
   *         - SD_RESPONSE_FAILURE: Sequence failed
   *         - SD_RESPONSE_NO_ERROR: Sequence succeed
   */
-SD_Error SD_Init(void)
+SD_Error SD_Init(SD_CardInfo *SDCardInfo)
 {
   uint32_t i = 0;
 
@@ -145,7 +144,7 @@ SD_Error SD_Init(void)
 	if(SD_Type == SD_TYPE_NOT_SD)
 		return SD_RESPONSE_FAILURE;
 			
-	return SD_GetCardInfo(&SDCardInfo);	
+	return SD_GetCardInfo(SDCardInfo);	
 	
 }
 

@@ -34,6 +34,7 @@
 static struct sd_device sd0_dev;
 // static sd_card_info_struct sd_cardinfo; /* information of SD card */
 static struct rt_mutex sd_lock;
+static SD_CardInfo SDCardInfo_g;	//用于存储卡的信息
 
 /*!
     \brief      this function handles SDIO interrupt request
@@ -101,8 +102,7 @@ static struct rt_mutex sd_lock;
 // }
 
 static rt_err_t init(sd_dev_t sd) {
-  SD_Error Status = SD_RESPONSE_NO_ERROR;
-  if ((Status = SD_Init()) != SD_RESPONSE_NO_ERROR) {
+  if ((SD_Init(&SDCardInfo_g)) != SD_RESPONSE_NO_ERROR) {
     return RT_ERROR;
   } else {
     return RT_EOK;
@@ -118,17 +118,17 @@ static rt_err_t sd_write(sd_dev_t sd, rt_uint8_t* buffer, rt_uint32_t sector, rt
 
   RT_TRY(rt_mutex_take(&sd_lock, TICKS_FROM_MS(SD_WAIT_TIMEOUT)));
 
-  // if (count > 1) {
-  //     if (sd_multiblocks_write((uint32_t*)buffer, sector * sd_cardinfo.card_blocksize, sd_cardinfo.card_blocksize,
-  //     count) != SD_OK) {
-  //         err = RT_ERROR;
-  //     }
-  // } else {
-  //     if (sd_block_write((uint32_t*)buffer, sector * sd_cardinfo.card_blocksize, sd_cardinfo.card_blocksize) !=
-  //     SD_OK) {
-  //         err = RT_ERROR;
-  //     }
-  // }
+  if (count > 1) {
+    if (SD_WriteMultiBlocks(buffer, sector * SDCardInfo_g.CardBlockSize, SDCardInfo_g.CardBlockSize, count) !=
+        SD_RESPONSE_NO_ERROR) {
+      err = RT_ERROR;
+    }
+  } else {
+    if (SD_WriteBlock(buffer, sector * SDCardInfo_g.CardBlockSize, SDCardInfo_g.CardBlockSize) !=
+        SD_RESPONSE_NO_ERROR) {
+      err = RT_ERROR;
+    }
+  }
 
   RT_TRY(rt_mutex_release(&sd_lock));
 
@@ -144,17 +144,16 @@ static rt_err_t sd_read(sd_dev_t sd, rt_uint8_t* buffer, rt_uint32_t sector, rt_
 
   RT_TRY(rt_mutex_take(&sd_lock, TICKS_FROM_MS(SD_WAIT_TIMEOUT)));
 
-  // if (count > 1) {
-  //     if (sd_multiblocks_read((uint32_t*)buffer, sector * sd_cardinfo.card_blocksize, sd_cardinfo.card_blocksize,
-  //     count) != SD_OK) {
-  //         err = RT_ERROR;
-  //     }
-  // } else {
-  //     if (sd_block_read((uint32_t*)buffer, sector * sd_cardinfo.card_blocksize, sd_cardinfo.card_blocksize) != SD_OK)
-  //     {
-  //         err = RT_ERROR;
-  //     }
-  // }
+  if (count > 1) {
+    if (SD_ReadMultiBlocks(buffer, sector * SDCardInfo_g.CardBlockSize, SDCardInfo_g.CardBlockSize, count) !=
+        SD_RESPONSE_NO_ERROR) {
+      err = RT_ERROR;
+    }
+  } else {
+    if (SD_ReadBlock(buffer, sector * SDCardInfo_g.CardBlockSize, SDCardInfo_g.CardBlockSize) != SD_RESPONSE_NO_ERROR) {
+      err = RT_ERROR;
+    }
+  }
 
   RT_TRY(rt_mutex_release(&sd_lock));
 
@@ -166,9 +165,9 @@ static rt_err_t sd_control(sd_dev_t sd, int cmd, void* arg) {
     case RT_DEVICE_CTRL_BLK_GETGEOME: {
       struct rt_device_blk_geometry geometry;
 
-      // geometry.bytes_per_sector = sd_cardinfo.card_blocksize;
-      // geometry.block_size = sd_cardinfo.card_blocksize;
-      // geometry.sector_count = sd_cardinfo.card_capacity / sd_cardinfo.card_blocksize;
+      geometry.bytes_per_sector = SDCardInfo_g.CardBlockSize;
+      geometry.block_size = SDCardInfo_g.CardBlockSize;
+      geometry.sector_count = SDCardInfo_g.CardCapacity / SDCardInfo_g.CardBlockSize;
       *(struct rt_device_blk_geometry*)arg = geometry;
     } break;
     case RT_DEVICE_CTRL_BLK_SYNC: {

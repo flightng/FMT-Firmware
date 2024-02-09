@@ -383,7 +383,7 @@ void bsp_initialize(void)
     FMT_CHECK(workqueue_manager_init());
 
     // /* init storage devices */
-    RT_CHECK(drv_sd_init("spi3_dev0"));
+    RT_CHECK(drv_sd_init("spi4_dev0"));
     // RT_CHECK(drv_w25qxx_init("spi3_dev0", "mtdblk0"));
     /* init file system */
     FMT_CHECK(file_manager_init(mnt_table));

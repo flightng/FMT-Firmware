@@ -396,7 +396,39 @@ static rt_err_t at32_spi_register(spi_type* spi_periph,
         //TODO
 #endif
     }
-    else
+    else if(spi_periph == SPI4)
+    {
+        at32_spi->spi_periph = SPI4;
+        gpio_init_type gpio_initstructure;
+
+        crm_periph_clock_enable(CRM_SPI4_PERIPH_CLOCK, TRUE);
+        crm_periph_clock_enable(CRM_GPIOE_PERIPH_CLOCK, TRUE);
+
+        /* master sck pin */
+        gpio_initstructure.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
+        gpio_initstructure.gpio_pull           = GPIO_PULL_DOWN;
+        gpio_initstructure.gpio_mode           = GPIO_MODE_MUX;
+        gpio_initstructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+        gpio_initstructure.gpio_pins           = GPIO_PINS_2;
+        gpio_init(GPIOE, &gpio_initstructure);
+        gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE2, GPIO_MUX_5);
+
+        /* master miso pin */
+        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
+        gpio_initstructure.gpio_pins           = GPIO_PINS_5;
+        gpio_init(GPIOE, &gpio_initstructure);
+        gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE5, GPIO_MUX_5);
+
+        /* master mosi pin */
+        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
+        gpio_initstructure.gpio_pins           = GPIO_PINS_6;
+        gpio_init(GPIOE, &gpio_initstructure);
+        gpio_pin_mux_config(GPIOE, GPIO_PINS_SOURCE6, GPIO_MUX_5);
+#ifdef SPI_USE_DMA
+
+#endif // DEBUG
+    }
+    else 
     {
         return RT_ENOSYS;
     }
@@ -413,6 +445,7 @@ rt_err_t drv_spi_init(void)
     static struct at32_spi_bus at32_spi1;
     static struct at32_spi_bus at32_spi2;
     static struct at32_spi_bus at32_spi3;
+    static struct at32_spi_bus at32_spi4;
 
     /* register SPI0 bus */
     RT_TRY(at32_spi_register(SPI2, &at32_spi2, "spi2"));
@@ -480,6 +513,28 @@ rt_err_t drv_spi_init(void)
         gpio_bits_set(spi3_cs0.gpio_periph, spi3_cs0.pin);
 
         RT_TRY(rt_spi_bus_attach_device(&rt_spi3_dev0, "spi3_dev0", "spi3", (void*)&spi3_cs0));
+    }
+
+    RT_TRY(at32_spi_register(SPI4, &at32_spi4, "spi4"));
+    /* attach spi_device_0 to spi3 */
+    {
+        static struct rt_spi_device rt_spi4_dev0;
+        static struct at32_spi_cs spi4_cs0 = { .gpio_periph = GPIOE, .pin = GPIO_PINS_4 };
+    
+        crm_periph_clock_enable(CRM_GPIOE_PERIPH_CLOCK, TRUE);
+        gpio_init_type gpio_initstructure;
+        /* software cs, pd0 as a general io to control flash cs */
+        gpio_initstructure.gpio_out_type       = GPIO_OUTPUT_PUSH_PULL;
+        gpio_initstructure.gpio_pull           = GPIO_PULL_UP;
+        gpio_initstructure.gpio_mode           = GPIO_MODE_OUTPUT;
+        gpio_initstructure.gpio_drive_strength = GPIO_DRIVE_STRENGTH_STRONGER;
+        gpio_initstructure.gpio_pins           = GPIO_PINS_4;
+        gpio_init(GPIOE, &gpio_initstructure);
+
+        /* set CS pin by default */
+        gpio_bits_set(spi4_cs0.gpio_periph, spi4_cs0.pin);
+
+        RT_TRY(rt_spi_bus_attach_device(&rt_spi4_dev0, "spi4_dev0", "spi4", (void*)&spi4_cs0));
     }
 
     return RT_EOK;

@@ -414,8 +414,8 @@ void bsp_initialize(void)
 #else
     /* init onboard sensors */
     // RT_CHECK(drv_bmi088_init("spi0_dev1", "spi0_dev0", "gyro0", "accel0", 0));
-    RT_CHECK(drv_bmi270_init("spi1_dev0", "gyro0", "accel0"));
-    // RT_CHECK(drv_icm42688_init("spi3_dev0", "gyro0", "accel0", 0));
+    // RT_CHECK(drv_bmi270_init("spi1_dev0", "gyro0", "accel0"));
+    RT_CHECK(drv_icm42688_init("spi3_dev0", "gyro0", "accel0", 0));
     // RT_CHECK(drv_bmm150_init("spi0_dev2", "mag0"));
     // RT_CHECK(drv_spl06_init("spi0_dev3", "barometer"));
 
